@@ -1,3 +1,4 @@
+import json
 from copy import copy
 from typing import Annotated
 
@@ -7,10 +8,10 @@ import validators
 from fastapi import FastAPI, Header, HTTPException
 
 from calendar_sync_helper.entities import CalendarEventList, OutlookCalendarEvent, AbstractCalendarEvent, \
-    ComputeActionsInput, GoogleCalendarEvent
+    ComputeActionsInput, GoogleCalendarEvent, ComputeActionsResponse
 from calendar_sync_helper.utils import is_syncblocker_event, separate_syncblocker_events, get_id_from_attendees, \
-    get_syncblocker_attendees, get_syncblocker_title, fix_outlook_specific_field_defaults, get_boolean_header_value, \
-    is_valid_sync_prefix
+    build_syncblocker_attendees, get_syncblocker_title, fix_outlook_specific_field_defaults, get_boolean_header_value, \
+    is_valid_sync_prefix, strip_syncblocker_title_prefix
 
 app = FastAPI()
 
@@ -43,23 +44,27 @@ async def retrieve_calendar_file_proxy(
         headers = {
             x_auth_header_name: x_auth_header_value
         }
-        response = await client.get(x_file_location, headers=headers)
+        async with client.stream("GET", x_file_location, headers=headers) as response:
+            # response = await client.get(x_file_location, headers=headers, follow_redirects=True)
 
-        if response.status_code != 200:
-            raise HTTPException(status_code=400, detail=f"Failed to retrieve file, "
-                                                        f"response status: {response.status_code}")
+            if response.status_code != 200:
+                raise HTTPException(status_code=400, detail=f"Failed to retrieve file, "
+                                                            f"response status: {response.status_code}")
 
-        content_length = response.headers.get("Content-Length")
-        if content_length is None or int(content_length) > MAX_FILE_SIZE_LIMIT_BYTES:
-            raise HTTPException(status_code=413, detail="File size exceeds maximum size limit")
+            content_length = response.headers.get("Content-Length")
+            if content_length and int(content_length) > MAX_FILE_SIZE_LIMIT_BYTES:
+                raise HTTPException(status_code=413, detail="File size exceeds maximum size limit")
 
-        # Validate that the response content is a valid JSON
-        try:
-            json_content = response.json()
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Failed to parse JSON content: {str(e)}")
+            # Validate that the response content is a valid JSON
+            try:
+                await response.aread()
+                # Note: just calling response.json() may try to use an incorrect decoding,
+                # e.g. utf-8 where another one must be used
+                json_content = json.loads(response.text)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Failed to parse JSON content: {str(e)}")
 
-        return json_content
+            return json_content
 
 
 @app.post("/extract-events")
@@ -67,7 +72,7 @@ async def extract_events(
         event_list: CalendarEventList,
         x_unique_sync_prefix: Annotated[str | None, Header()] = None,
         x_anonymize_fields: Annotated[str | None, Header()] = None,
-        ignore_events_without_attendees: Annotated[str | None, Header()] = None,
+        x_sync_events_without_attendees: Annotated[str | None, Header()] = None,
         x_relevant_response_types: Annotated[str | None, Header()] = None,
         x_file_location: Annotated[str | None, Header()] = None,
         x_upload_http_method: Annotated[str | None, Header()] = None,
@@ -98,7 +103,7 @@ async def extract_events(
                                                     "alphanumeric characters and dashes")
 
     anonymize_fields = get_boolean_header_value(x_anonymize_fields)
-    ignore_events_without_attendees = get_boolean_header_value(ignore_events_without_attendees)
+    sync_events_without_attendees = get_boolean_header_value(x_sync_events_without_attendees)
 
     relevant_response_types: list[str] = []
     if x_relevant_response_types:
@@ -113,7 +118,7 @@ async def extract_events(
         if is_syncblocker_event(event, unique_sync_prefix=x_unique_sync_prefix):
             continue
 
-        if ignore_events_without_attendees:
+        if not sync_events_without_attendees:
             if isinstance(event, OutlookCalendarEvent) and not event.requiredAttendees:
                 continue
             elif isinstance(event, GoogleCalendarEvent) and not event.attendees:
@@ -136,7 +141,7 @@ async def extract_events(
 
             response = await client.request(x_upload_http_method, url=x_file_location, headers=headers)
 
-            if response.status_code != 200:
+            if response.status_code < 200 or response.status_code > 204:
                 raise HTTPException(status_code=400, detail=f"Failed to upload file, "
                                                             f"response status: {response.status_code}")
 
@@ -147,7 +152,7 @@ async def extract_events(
 async def compute_actions(
         input_data: ComputeActionsInput,
         x_unique_sync_prefix: Annotated[str | None, Header()] = None,
-        x_syncblocker_prefix: Annotated[str | None, Header()] = None,
+        x_syncblocker_title_prefix: Annotated[str | None, Header()] = None,
         x_anonymized_title_placeholder: Annotated[str | None, Header()] = None,
 ):
     """
@@ -166,7 +171,7 @@ async def compute_actions(
     events_to_create: list[AbstractCalendarEvent] = []
 
     cal1_real, cal1_syncblocker = separate_syncblocker_events(input_data.cal1events, x_unique_sync_prefix)
-    cal2_ids = {event.sync_correlation_id for event in input_data.cal2_events}
+    cal2_ids = {event.sync_correlation_id for event in input_data.cal2events}
 
     # Delete SyncBlocker events whose corresponding real events are no longer present
     for sync_blocker_event in cal1_syncblocker:
@@ -179,13 +184,13 @@ async def compute_actions(
     for event in input_data.cal2events:
         if event.sync_correlation_id not in cal1_syncblocker_events_by_id:
             event_to_create = copy(event)
-            event_to_create.attendees = get_syncblocker_attendees(x_unique_sync_prefix,
-                                                                  real_event_correlation_id=event.sync_correlation_id)
-            event_to_create.title = get_syncblocker_title(x_syncblocker_prefix, event.title,
+            event_to_create.attendees = build_syncblocker_attendees(x_unique_sync_prefix,
+                                                                    real_event_correlation_id=event.sync_correlation_id)
+            event_to_create.title = get_syncblocker_title(x_syncblocker_title_prefix, event.title,
                                                           x_anonymized_title_placeholder)
             event_to_create.sync_correlation_id = ""
             fix_outlook_specific_field_defaults(event_to_create)
-            events_to_create.append(event)
+            events_to_create.append(event_to_create)
 
     # For each event e in cal2 with a corresponding event in cal1_syncblocker events, but where the title, location,
     # description, start, end, is_all_day, show_as, sensitivity are different, update the event in cal1
@@ -193,8 +198,11 @@ async def compute_actions(
         if event.sync_correlation_id in cal1_syncblocker_events_by_id:
             cal1_syncblocker_event = cal1_syncblocker_events_by_id[event.sync_correlation_id]
             abstract_cal1_sb_event = AbstractCalendarEvent.from_implementation(cal1_syncblocker_event)
+            # In case cal2 contains Google events, make sure the comparison below works
+            fix_outlook_specific_field_defaults(event)
             if (
-                    abstract_cal1_sb_event.title != event.title or
+                    strip_syncblocker_title_prefix(abstract_cal1_sb_event.title,
+                                                   x_syncblocker_title_prefix) != event.title or
                     abstract_cal1_sb_event.location != event.location or
                     abstract_cal1_sb_event.description != event.description or
                     abstract_cal1_sb_event.start != event.start or
@@ -208,40 +216,18 @@ async def compute_actions(
                 # Note: update operations target the actual ID of the event, not the sync_correlation_id, but we simply
                 # use that field as a placeholder for the ID here
                 event_to_update.sync_correlation_id = abstract_cal1_sb_event.sync_correlation_id
-                event_to_update.attendees = get_syncblocker_attendees(x_unique_sync_prefix,
-                                                                      real_event_correlation_id=event.sync_correlation_id)
-                event_to_update.title = get_syncblocker_title(x_syncblocker_prefix, event.title,
+                event_to_update.attendees = build_syncblocker_attendees(x_unique_sync_prefix,
+                                                                        real_event_correlation_id=event.sync_correlation_id)
+                event_to_update.title = get_syncblocker_title(x_syncblocker_title_prefix, event.title,
                                                               x_anonymized_title_placeholder)
                 fix_outlook_specific_field_defaults(event_to_update)
                 events_to_update.append(event_to_update)
 
-    return {
-        "events_to_delete": events_to_delete,
-        "events_to_update": events_to_update,
-        "events_to_create": events_to_create
-    }
-
-
-"""
-When creating Outlook events, the required fields are:
-- subject
-- startTime, endTime, timezone: we can always provide "UTC" as timezone and return timestamped events
-- requiredAttendees
-- body
-- location
-- all day event
-- showAs
-- sensitivity
-
-
-When creating Google events, the required fields are:
-- startTime, endTime, as ISO 8601 strings that include timezone information
-- title
-- description
-- location
-- attendees
-- all day event
-"""
+    return ComputeActionsResponse(
+        events_to_delete=events_to_delete,
+        events_to_update=events_to_update,
+        events_to_create=events_to_create
+    )
 
 
 @app.put("/foo")

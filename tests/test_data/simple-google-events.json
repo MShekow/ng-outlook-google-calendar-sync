@@ -1,0 +1,56 @@
+[
+  {
+    "kind": "calendar#event",
+    "etag": "\"3436773005794000\"",
+    "id": "0vj05aaoqlk1878pb4thqldma3_20241020T180000Z",
+    "status": "confirmed",
+    "htmlLink": "https://www.google.com/calendar/event?eid=MHZqMDVhYW9xbGsxODc4cGI0dGhxbGRtYTNfMjAyNDEwMjBUMTgwMDAwWiBwZXRlcnBhbjkxMjFAbQ",
+    "created": "2024-06-14T17:35:02Z",
+    "updated": "2024-06-14T17:35:02.897Z",
+    "summary": "Test",
+    "creator": "peterpan9121@gmail.com",
+    "organizer": "peterpan9121@gmail.com",
+    "start": "2024-10-20T18:00:00+00:00",
+    "end": "2024-10-20T19:00:00+00:00",
+    "recurringEventId": "0vj05aaoqlk1878pb4thqldma3",
+    "originalStartTime": {
+      "dateTime": "2024-10-20T18:00:00+00:00",
+      "timeZone": "Europe/Berlin"
+    },
+    "iCalUID": "0vj05aaoqlk1878pb4thqldma3@google.com",
+    "sequence": 0,
+    "reminders": {
+      "useDefault": true
+    },
+    "eventType": "default",
+    "description": "some-description",
+    "location": "l1",
+    "attendees": "",
+    "endTimeUnspecified": false
+  },
+  {
+    "kind": "calendar#event",
+    "etag": "\"3458825769834000\"",
+    "id": "2p46iccjfho9etduhmc12171rt",
+    "status": "confirmed",
+    "htmlLink": "https://www.google.com/calendar/event?eid=MnA0NmljY2pmaG85ZXRkdWhtYzEyMTcxcnQgcGV0ZXJwYW45MTIxQG0",
+    "created": "2024-10-20T08:28:04Z",
+    "updated": "2024-10-20T08:28:04.917Z",
+    "summary": "Allday",
+    "location": "loc",
+    "creator": "peterpan9121@gmail.com",
+    "organizer": "peterpan9121@gmail.com",
+    "start": "2024-10-21",
+    "end": "2024-10-22",
+    "transparency": "transparent",
+    "iCalUID": "2p46iccjfho9etduhmc12171rt@google.com",
+    "sequence": 0,
+    "reminders": {
+      "useDefault": false
+    },
+    "eventType": "default",
+    "description": "allday-body",
+    "attendees": "",
+    "endTimeUnspecified": false
+  }
+]

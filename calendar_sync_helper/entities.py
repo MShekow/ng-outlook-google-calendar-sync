@@ -17,8 +17,8 @@ class GoogleCalendarEvent(BaseModel):
     description: str
     location: str
     attendees: str  # separated by comma (or ", "), usually no comma if there is only 1 attendee
-    start: datetime | date  # date for all-day events, otherwise Google uses e.g. 2024-01-05T19:15:00+00:00
-    end: datetime | date
+    start: date | datetime  # date for all-day events, otherwise Google uses e.g. 2024-01-05T19:15:00+00:00
+    end: date | datetime
 
 
 class OutlookCalendarEvent(BaseModel):
@@ -53,11 +53,21 @@ class AbstractCalendarEvent(BaseModel):
                             anonymize_fields: bool = False) -> Self:
         if isinstance(event_impl, GoogleCalendarEvent):
             if type(event_impl.start) == date:
-                # all-day event
+                # all-day event, where e.g. start="2024-10-01" and end="2024-10-02" indicates a ONE-day-long event,
+                # that is, the interval notation would be: [start, end)
+
+                # Convert the start/end date object to datetime objects
                 zero_am_utc = time(hour=0, minute=0, second=0, tzinfo=UTC)
                 start_time = datetime.combine(event_impl.start, zero_am_utc)
-                midnight_utc = time(hour=23, minute=59, second=59, tzinfo=UTC)
-                end_time = datetime.combine(event_impl.end, midnight_utc)
+                if not type(event_impl.end) == date:
+                    raise ValueError(f"For event titled '{event_impl.summary}', the start is a date (not datetime), "
+                                     f"but the end is a datetime, which makes no sense")
+                date_diff = event_impl.end - event_impl.start
+                if date_diff.days == 0:
+                    raise ValueError(f"For event titled '{event_impl.summary}', the start and end date is the same,"
+                                     f"'{event_impl.start}', but expected it to be at least one day apart")
+
+                end_time = datetime.combine(event_impl.end, zero_am_utc)
                 is_all_day = True
             else:
                 start_time = event_impl.start
@@ -86,7 +96,9 @@ class AbstractCalendarEvent(BaseModel):
             sensitivity=event_impl.sensitivity
         )
 
+
 type ImplSpecificEvent = GoogleCalendarEvent | OutlookCalendarEvent
+
 
 class CalendarEventList(BaseModel):
     events: list[ImplSpecificEvent]
@@ -95,3 +107,9 @@ class CalendarEventList(BaseModel):
 class ComputeActionsInput(BaseModel):
     cal1events: list[ImplSpecificEvent]
     cal2events: list[AbstractCalendarEvent]
+
+
+class ComputeActionsResponse(BaseModel):
+    events_to_delete: list[AbstractCalendarEvent]
+    events_to_update: list[AbstractCalendarEvent]
+    events_to_create: list[AbstractCalendarEvent]

@@ -21,13 +21,10 @@ def extract_attendees(event: ImplSpecificEvent) -> list[str]:
 def is_syncblocker_event(event: ImplSpecificEvent, unique_sync_prefix: str) -> bool:
     attendees = extract_attendees(event)
 
-    # clean empty array slots and superfluous spaces
-    attendees_cleaned = [attendee.strip() for attendee in attendees if bool(attendee)]
-
-    if len(attendees_cleaned) != 1:
+    if len(attendees) != 1:
         return False
 
-    attendee = attendees_cleaned[0]
+    attendee = attendees[0]
     return attendee.endswith(".invalid") and attendee.startswith(f"{unique_sync_prefix}@")
 
 
@@ -36,8 +33,17 @@ def get_id_from_attendees(event: ImplSpecificEvent) -> str:
     Assumes that the event is a SyncBlocker event. Returns the id stored in the attendee's email address.
     """
     attendees = extract_attendees(event)
-    # attendees[0] has the form "<sync-prefix>@<id>.invalid"
-    return attendees[0].split("@")[1].rstrip(".invalid")
+    # attendees[0] has the form "<sync-prefix>@<id-with-padding>.invalid"
+    id_with_padding = attendees[0].split("@")[1].rstrip(".invalid")
+    # id_with_padding should e.g. look like this: "aaaaaaa-<actual-id>"
+    id_parts = id_with_padding.split("-")
+    if len(id_parts) != 2:
+        e = AbstractCalendarEvent.from_implementation(event)
+        raise HTTPException(status_code=400, detail=f"Attendee email for event '{e.title}' (start: '{e.start}') "
+                                                    f"has an invalid syncblocker attendee email that lacks "
+                                                    f"padding: '{attendees[0]}'")
+
+    return id_parts[1]
 
 
 def separate_syncblocker_events(events: list[ImplSpecificEvent],
@@ -54,20 +60,39 @@ def separate_syncblocker_events(events: list[ImplSpecificEvent],
     return cal1real, cal1sb
 
 
-def get_syncblocker_attendees(unique_sync_prefix: str, real_event_correlation_id: str) -> str:
-    # TODO: need to handle ID-padding for the attendee email
-    return f"{unique_sync_prefix}@{real_event_correlation_id}.invalid"
+def build_syncblocker_attendees(unique_sync_prefix: str, real_event_correlation_id: str) -> str:
+    """
+    Creates a string with a single email address of the form:
+    <unique-sync-prefix>@<padding>-<real-event-correlation-id>.invalid
+
+    The reason why we add a padding is that some calendar providers (so far, only Outlook), may actually try to send
+    event invitation emails when creating an event in the calendar (Googles does NOT). In case of Outlook, this would
+    cause notification emails in your account, complaining that these invitation mails cannot be delivered (because of
+    the ".invalid" domain). However, these event invitation mails only seem to be sent if the host is rather short.
+    By adding a padding (making the DNS longer), the problem no longer occurs.
+    """
+    attendee_address_without_padding = f"{unique_sync_prefix}@{real_event_correlation_id}.invalid"
+    number_of_padding_chars = 255 - len(attendee_address_without_padding)
+    if number_of_padding_chars < 2:  # 2 because we want to add at least "a-"
+        raise HTTPException(status_code=400, detail=f"Unique sync prefix is too long to build an attendee email."
+                                                    f"For event with ID '{real_event_correlation_id}' "
+                                                    f"(length:  {len(real_event_correlation_id)}) there are too few "
+                                                    f"padding chars left: {number_of_padding_chars}. Please shorten "
+                                                    f"your unique sync prefix")
+
+    padding = "a" * (number_of_padding_chars - 1)
+    return f"{unique_sync_prefix}@{padding}-{real_event_correlation_id}.invalid"
 
 
-def get_syncblocker_title(syncblocker_prefix: Optional[str], event_title: str,
+def get_syncblocker_title(syncblocker_title_prefix: Optional[str], event_title: str,
                           anonymized_title_placeholder: Optional[str]) -> str:
     title_placeholder = anonymized_title_placeholder if anonymized_title_placeholder else ""  # avoid "None" in title
-    syncblocker_prefix = syncblocker_prefix if syncblocker_prefix else ""  # avoid "None" in title
+    syncblocker_title_prefix = syncblocker_title_prefix if syncblocker_title_prefix else ""  # avoid "None" in title
 
     if not event_title:
         event_title = title_placeholder
 
-    return syncblocker_prefix + event_title
+    return syncblocker_title_prefix + event_title
 
 
 def fix_outlook_specific_field_defaults(event: AbstractCalendarEvent):
@@ -76,6 +101,14 @@ def fix_outlook_specific_field_defaults(event: AbstractCalendarEvent):
 
     if event.sensitivity is None:
         event.sensitivity = "normal"
+
+
+def strip_syncblocker_title_prefix(event_title: str, syncblocker_title_prefix: Optional[str]) -> str:
+    if not syncblocker_title_prefix:
+        return event_title
+
+    if event_title.startswith(syncblocker_title_prefix):
+        return event_title[len(syncblocker_title_prefix):]
 
 
 def get_boolean_header_value(raw_header: Optional[str]) -> bool:
