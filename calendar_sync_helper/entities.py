@@ -1,13 +1,7 @@
-import re
 from datetime import datetime, date, time, UTC
 from typing import Self, Optional
 
 from pydantic import BaseModel
-
-
-def clean_id(unclean_id: str) -> str:
-    """ Remove any character that is not a-z, A-Z, or 0-9 """
-    return re.sub(r'[^a-zA-Z0-9]', '', unclean_id)
 
 
 class GoogleCalendarEvent(BaseModel):
@@ -23,7 +17,6 @@ class GoogleCalendarEvent(BaseModel):
 
 class OutlookCalendarEvent(BaseModel):
     id: str
-    iCalUId: str
     subject: str
     body: str
     location: str
@@ -75,7 +68,7 @@ class AbstractCalendarEvent(BaseModel):
                 is_all_day = False
 
             return cls(
-                sync_correlation_id=clean_id(event_impl.id),
+                sync_correlation_id=event_impl.id,
                 title="" if anonymize_fields else event_impl.summary,
                 description="" if anonymize_fields else event_impl.description,
                 location="" if anonymize_fields else event_impl.location,
@@ -85,7 +78,7 @@ class AbstractCalendarEvent(BaseModel):
             )
 
         return cls(
-            sync_correlation_id=clean_id(event_impl.iCalUId),
+            sync_correlation_id=event_impl.id,
             title="" if anonymize_fields else event_impl.subject,
             description="" if anonymize_fields else event_impl.body,
             location="" if anonymize_fields else event_impl.location,

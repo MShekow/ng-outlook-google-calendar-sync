@@ -96,7 +96,6 @@ def test_success_delete_syncblocker(test_client: TestClient):
         cal1events=[
             OutlookCalendarEvent(
                 id="realevent",
-                iCalUId="realevent",
                 subject="Real event",
                 body="",
                 location="",
@@ -110,7 +109,6 @@ def test_success_delete_syncblocker(test_client: TestClient):
             ),
             OutlookCalendarEvent(
                 id="syncblockerevent",
-                iCalUId="syncblockerevent",
                 subject="Some title",
                 body="",
                 location="",
@@ -188,7 +186,6 @@ def test_success_no_action_all_equal(test_client: TestClient, syncblocker_title_
         cal1events=[
             OutlookCalendarEvent(
                 id="syncblockerevent",
-                iCalUId="syncblockerevent",
                 subject=f"{syncblocker_title_prefix}Some event",
                 body="b",
                 location="l",
@@ -321,7 +318,6 @@ def test_success_update_syncblocker(test_client: TestClient, syncblocker_title_p
         cal1events=[
             OutlookCalendarEvent(
                 id="syncblockerevent",
-                iCalUId="syncblockerevent",
                 subject=f"{syncblocker_title_prefix}Some event",
                 body="b",
                 location="l",
@@ -361,7 +357,7 @@ def test_success_update_syncblocker(test_client: TestClient, syncblocker_title_p
     response_data = ComputeActionsResponse(**response.json())
 
     expected_event = copy(data.cal2events[0])
-    expected_event.sync_correlation_id = data.cal1events[0].iCalUId
+    expected_event.sync_correlation_id = data.cal1events[0].id
 
     original_show_as = expected_event.show_as
     original_sensitivity = expected_event.sensitivity

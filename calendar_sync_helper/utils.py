@@ -63,7 +63,7 @@ def separate_syncblocker_events(events: list[ImplSpecificEvent],
 def build_syncblocker_attendees(unique_sync_prefix: str, real_event_correlation_id: str) -> str:
     """
     Creates a string with a single email address of the form:
-    <unique-sync-prefix>@<padding>-<real-event-correlation-id>.invalid
+    <unique-sync-prefix>@<padding>-<cleaned-real-event-correlation-id>.invalid
 
     The reason why we add a padding is that some calendar providers (so far, only Outlook), may actually try to send
     event invitation emails when creating an event in the calendar (Googles does NOT). In case of Outlook, this would
@@ -71,17 +71,18 @@ def build_syncblocker_attendees(unique_sync_prefix: str, real_event_correlation_
     the ".invalid" domain). However, these event invitation mails only seem to be sent if the host is rather short.
     By adding a padding (making the DNS longer), the problem no longer occurs.
     """
-    attendee_address_without_padding = f"{unique_sync_prefix}@{real_event_correlation_id}.invalid"
+    cleaned_real_event_correlation_id = clean_id(real_event_correlation_id)
+    attendee_address_without_padding = f"{unique_sync_prefix}@{cleaned_real_event_correlation_id}.invalid"
     number_of_padding_chars = 255 - len(attendee_address_without_padding)
     if number_of_padding_chars < 2:  # 2 because we want to add at least "a-"
-        raise HTTPException(status_code=400, detail=f"Unique sync prefix is too long to build an attendee email."
-                                                    f"For event with ID '{real_event_correlation_id}' "
-                                                    f"(length:  {len(real_event_correlation_id)}) there are too few "
-                                                    f"padding chars left: {number_of_padding_chars}. Please shorten "
-                                                    f"your unique sync prefix")
+        raise HTTPException(status_code=400, detail=f"Unique sync prefix is too long to build an attendee email. "
+                                                    f"For event with ID '{cleaned_real_event_correlation_id}' "
+                                                    f"(length:  {len(cleaned_real_event_correlation_id)}) there are "
+                                                    f"too few padding chars left: {number_of_padding_chars}. "
+                                                    f"Please shorten your unique sync prefix")
 
     padding = "a" * (number_of_padding_chars - 1)
-    return f"{unique_sync_prefix}@{padding}-{real_event_correlation_id}.invalid"
+    return f"{unique_sync_prefix}@{padding}-{cleaned_real_event_correlation_id}.invalid"
 
 
 def get_syncblocker_title(syncblocker_title_prefix: Optional[str], event_title: str,
@@ -131,3 +132,8 @@ def is_valid_sync_prefix(sync_prefix: str) -> bool:
     """
     pattern = r'^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*$'
     return bool(re.match(pattern, sync_prefix))
+
+
+def clean_id(unclean_id: str) -> str:
+    """ Remove any character that is not a-z, A-Z, or 0-9 """
+    return re.sub(r'[^a-zA-Z0-9]', '', unclean_id)

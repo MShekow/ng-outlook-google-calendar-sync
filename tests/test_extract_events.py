@@ -62,7 +62,7 @@ def test_success_simple_outlook_events(test_client: TestClient):
     calendar_events = parse_abstract_calendar_event_list(response.json())
     assert calendar_events == [
         AbstractCalendarEvent(
-            sync_correlation_id="040000008200E00174C5B7101A82E008000000000D82237BAD16DB0100000000000000001000000086F553E2D6F24149BC9B223050FB0BD9",
+            sync_correlation_id="AAMkAGRiOTlhZjY3LTQzNWUtNGM0Ny05MGMwLWFmNDBlNzAxMDQ5OQBGAAAAAADBo9O3K16XQLoK7AG7_ka5BwARhE7LLMewTpXLsn71Fh8UAAAAAAENAAARhE7LLMewTpXLsn71Fh9UAAIRfOSpAAA=",
             title="Fokuszeit",
             description="body-Fokuszeit",
             location="l",
@@ -74,7 +74,7 @@ def test_success_simple_outlook_events(test_client: TestClient):
             sensitivity="normal"
         ),
         AbstractCalendarEvent(
-            sync_correlation_id="040000008200E00074C5B7101A82E00800000000E75ACCD73522DB0100000000000000001000000072047E4E7E7C36468914B69EB5FF7512",
+            sync_correlation_id="AAMkAGRiOTlhZjY3LTQzNWUtNGM0Ny05MGMwLWFmNDBlNzAxMZQ5OQBGAAAAAADBo9O3K16XQLoK7AG7_ka5BwARhE7LLMewTpXLsn71Fh9UAADAKPwgAAARhE7LLMewTpXLsn71Fh9UAAIb2raZAAA=",
             title="Allday-Test",
             description="body-allday",
             location="",
@@ -99,7 +99,7 @@ def test_success_simple_google_events(test_client: TestClient):
     calendar_events = parse_abstract_calendar_event_list(response.json())
     assert calendar_events == [
         AbstractCalendarEvent(
-            sync_correlation_id="0vj05aaoqlk1878pb4thqldma320241020T180000Z",  # Note: _ was removed
+            sync_correlation_id="0vj05aaoqlk1878pb4thqldma3_20241020T180000Z",  # Note: _ was removed
             title="Test",
             description="some-description",
             location="l1",

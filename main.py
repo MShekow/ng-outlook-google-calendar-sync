@@ -11,7 +11,7 @@ from calendar_sync_helper.entities import CalendarEventList, OutlookCalendarEven
     ComputeActionsInput, GoogleCalendarEvent, ComputeActionsResponse
 from calendar_sync_helper.utils import is_syncblocker_event, separate_syncblocker_events, get_id_from_attendees, \
     build_syncblocker_attendees, get_syncblocker_title, fix_outlook_specific_field_defaults, get_boolean_header_value, \
-    is_valid_sync_prefix, strip_syncblocker_title_prefix
+    is_valid_sync_prefix, strip_syncblocker_title_prefix, clean_id
 
 app = FastAPI()
 
@@ -107,7 +107,7 @@ async def extract_events(
 
     relevant_response_types: list[str] = []
     if x_relevant_response_types:
-        relevant_response_types = [item.strip() for item in x_relevant_response_types.split(",")]
+        relevant_response_types = [item.strip() for item in x_relevant_response_types.split(",") if item]
 
     events = []
     for event in event_list.events:
@@ -171,18 +171,18 @@ async def compute_actions(
     events_to_create: list[AbstractCalendarEvent] = []
 
     cal1_real, cal1_syncblocker = separate_syncblocker_events(input_data.cal1events, x_unique_sync_prefix)
-    cal2_ids = {event.sync_correlation_id for event in input_data.cal2events}
+    cleaned_cal2_ids = {clean_id(event.sync_correlation_id) for event in input_data.cal2events}
 
     # Delete SyncBlocker events whose corresponding real events are no longer present
     for sync_blocker_event in cal1_syncblocker:
-        if get_id_from_attendees(sync_blocker_event) not in cal2_ids:
+        if get_id_from_attendees(sync_blocker_event) not in cleaned_cal2_ids:
             events_to_delete.append(AbstractCalendarEvent.from_implementation(sync_blocker_event))
 
     # For each event e in cal2 where e.sync_correlation_id is not found in any cal1_syncblocker events, create an
     # event in cal1
-    cal1_syncblocker_events_by_id = {get_id_from_attendees(event): event for event in cal1_syncblocker}
+    cal1_syncblocker_events_by_cleaned_id = {get_id_from_attendees(event): event for event in cal1_syncblocker}
     for event in input_data.cal2events:
-        if event.sync_correlation_id not in cal1_syncblocker_events_by_id:
+        if clean_id(event.sync_correlation_id) not in cal1_syncblocker_events_by_cleaned_id:
             event_to_create = copy(event)
             event_to_create.attendees = build_syncblocker_attendees(x_unique_sync_prefix,
                                                                     real_event_correlation_id=event.sync_correlation_id)
@@ -195,8 +195,8 @@ async def compute_actions(
     # For each event e in cal2 with a corresponding event in cal1_syncblocker events, but where the title, location,
     # description, start, end, is_all_day, show_as, sensitivity are different, update the event in cal1
     for event in input_data.cal2events:
-        if event.sync_correlation_id in cal1_syncblocker_events_by_id:
-            cal1_syncblocker_event = cal1_syncblocker_events_by_id[event.sync_correlation_id]
+        if clean_id(event.sync_correlation_id) in cal1_syncblocker_events_by_cleaned_id:
+            cal1_syncblocker_event = cal1_syncblocker_events_by_cleaned_id[clean_id(event.sync_correlation_id)]
             abstract_cal1_sb_event = AbstractCalendarEvent.from_implementation(cal1_syncblocker_event)
             # In case cal2 contains Google events, make sure the comparison below works
             fix_outlook_specific_field_defaults(event)
