@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: ng-outlook-google-calendar-sync
+    runtime: python
+    plan: free
+    autoDeploy: false
+    buildCommand: poetry install
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.5"
+      - key: POETRY_VERSION
+        value: "1.8.3"
