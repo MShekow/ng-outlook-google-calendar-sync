@@ -135,5 +135,8 @@ def is_valid_sync_prefix(sync_prefix: str) -> bool:
 
 
 def clean_id(unclean_id: str) -> str:
-    """ Remove any character that is not a-z, A-Z, or 0-9 """
-    return re.sub(r'[^a-zA-Z0-9]', '', unclean_id)
+    # Remove any character that is not a-z, A-Z, or 0-9
+    cleaned_id = re.sub(r'[^a-zA-Z0-9]', '', unclean_id)
+    # Some calendar providers (Outlook) may use mixed upper/lower case, but we cannot and should not use mixed case in
+    # the (case-INsensitive) attendee email address
+    return cleaned_id.lower()

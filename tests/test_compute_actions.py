@@ -172,7 +172,7 @@ def test_success_create_syncblocker(test_client: TestClient, syncblocker_title_p
                 start="2024-10-20T18:00:00Z",
                 end="2024-10-20T19:00:00Z",
                 is_all_day=False,
-                attendees=f"{DEFAULT_UNIQUE_SYNC_PREFIX}@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-040000008200E00174C5B7101A82E008000000000D82237BAD16DB0100000000000000001000000086F553E2D6F24149BC9B223050FB0BD9.invalid",
+                attendees=f"{DEFAULT_UNIQUE_SYNC_PREFIX}@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-040000008200e00174c5b7101a82e008000000000d82237bad16db0100000000000000001000000086f553e2d6f24149bc9b223050fb0bd9.invalid",
                 show_as="busy",
                 sensitivity="normal"
             )
@@ -191,7 +191,7 @@ def test_success_no_action_all_equal(test_client: TestClient, syncblocker_title_
                 location="l",
                 startWithTimeZone="2024-09-09T07:00:00+00:00",
                 endWithTimeZone="2024-09-09T08:00:00+00:00",
-                requiredAttendees=f"{DEFAULT_UNIQUE_SYNC_PREFIX}@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-040000008200E00174C5B7101A82E008000000000D82237BAD16DB0100000000000000001000000086F553E2D6F24149BC9B223050FB0BD9.invalid",
+                requiredAttendees=f"{DEFAULT_UNIQUE_SYNC_PREFIX}@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-040000008200e00174c5b7101a82e008000000000d82237bad16db0100000000000000001000000086f553e2d6f24149bc9b223050fb0bd9.invalid",
                 responseType="organizer",
                 isAllDay=False,
                 showAs="busy",
@@ -323,7 +323,7 @@ def test_success_update_syncblocker(test_client: TestClient, syncblocker_title_p
                 location="l",
                 startWithTimeZone="2024-09-09T07:00:00+00:00",
                 endWithTimeZone="2024-09-09T08:00:00+00:00",
-                requiredAttendees=f"{DEFAULT_UNIQUE_SYNC_PREFIX}@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-040000008200E00174C5B7101A82E008000000000D82237BAD16DB0100000000000000001000000086F553E2D6F24149BC9B223050FB0BD9.invalid",
+                requiredAttendees=f"{DEFAULT_UNIQUE_SYNC_PREFIX}@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-040000008200e00174c5b7101a82e008000000000d82237bad16db0100000000000000001000000086f553e2d6f24149bc9b223050fb0bd9.invalid",
                 responseType="organizer",
                 isAllDay=False,
                 showAs="busy",
