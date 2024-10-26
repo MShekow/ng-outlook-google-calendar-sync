@@ -34,7 +34,8 @@ def get_id_from_attendees(event: ImplSpecificEvent) -> str:
     """
     attendees = extract_attendees(event)
     # attendees[0] has the form "<sync-prefix>@<id-with-padding>.invalid"
-    id_with_padding = attendees[0].split("@")[1].rstrip(".invalid")
+    id_with_padding_and_invalid_domain = attendees[0].split("@")[1]
+    id_with_padding = id_with_padding_and_invalid_domain[:-len(".invalid")]
     # id_with_padding should e.g. look like this: "aaaaaaa-<actual-id>"
     id_parts = id_with_padding.split("-")
     if len(id_parts) != 2:
