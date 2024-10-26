@@ -5,6 +5,7 @@ from typing import Annotated
 import httpx
 import validators
 from fastapi import Header, HTTPException, APIRouter
+from fastapi.encoders import jsonable_encoder
 
 from calendar_sync_helper.entities.entities_v1 import CalendarEventList, OutlookCalendarEvent, AbstractCalendarEvent, \
     ComputeActionsInput, GoogleCalendarEvent, ComputeActionsResponse
@@ -138,7 +139,9 @@ async def extract_events(
             if x_auth_header_name and x_auth_header_value:
                 headers[x_auth_header_name] = x_auth_header_value
 
-            response = await client.request(x_upload_http_method, url=x_file_location, headers=headers)
+            events_as_json_dict = jsonable_encoder(events)
+            response = await client.request(x_upload_http_method, url=x_file_location, headers=headers,
+                                            json=events_as_json_dict)
 
             if response.status_code < 200 or response.status_code > 204:
                 raise HTTPException(status_code=400, detail=f"Failed to upload file, "
