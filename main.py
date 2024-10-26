@@ -230,20 +230,5 @@ async def compute_actions(
     )
 
 
-@app.put("/foo")
-async def update_foo(
-        body: dict,
-        x_custom_header: str = Header(None),
-        user_agent: str = Header(None)
-):
-    return {
-        "body": body,
-        "headers": {
-            "X-Custom-Header": x_custom_header,
-            "User-Agent": user_agent
-        }
-    }
-
-
-if __name__ == "__main__":
+if __name__ == "__main__":  # For when running main.py in the debugger of an IDE
     uvicorn.run(app, host="0.0.0.0", port=8000)
