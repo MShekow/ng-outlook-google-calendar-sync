@@ -1,6 +1,6 @@
 from pydantic import TypeAdapter
 
-from calendar_sync_helper.entities import AbstractCalendarEvent
+from calendar_sync_helper.entities.entities_v1 import AbstractCalendarEvent
 
 type_adapter = TypeAdapter(list[AbstractCalendarEvent])
 

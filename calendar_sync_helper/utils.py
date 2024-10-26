@@ -3,7 +3,7 @@ from typing import Optional
 
 from fastapi import HTTPException
 
-from calendar_sync_helper.entities import ImplSpecificEvent, GoogleCalendarEvent, AbstractCalendarEvent
+from calendar_sync_helper.entities.entities_v1 import ImplSpecificEvent, GoogleCalendarEvent, AbstractCalendarEvent
 
 
 def extract_attendees(event: ImplSpecificEvent) -> list[str]:

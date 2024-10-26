@@ -6,9 +6,8 @@ import pytest
 from fastapi.encoders import jsonable_encoder
 from fastapi.testclient import TestClient
 
-from calendar_sync_helper.entities import AbstractCalendarEvent, ComputeActionsInput, \
-    OutlookCalendarEvent, ComputeActionsResponse, GoogleCalendarEvent
-from calendar_sync_helper.entities import ImplSpecificEvent
+from calendar_sync_helper.entities.entities_v1 import AbstractCalendarEvent, ComputeActionsInput, \
+    OutlookCalendarEvent, ComputeActionsResponse, GoogleCalendarEvent, ImplSpecificEvent
 from calendar_sync_helper.utils import build_syncblocker_attendees
 
 URL = "/compute-actions"

@@ -2,7 +2,7 @@ import pytest
 from fastapi.encoders import jsonable_encoder
 from fastapi.testclient import TestClient
 
-from calendar_sync_helper.entities import CalendarEventList, AbstractCalendarEvent
+from calendar_sync_helper.entities.entities_v1 import CalendarEventList, AbstractCalendarEvent
 from tests import parse_abstract_calendar_event_list
 from tests.test_data import load_test_data
 
