@@ -107,7 +107,7 @@ def get_syncblocker_title(syncblocker_title_prefix: Optional[str], event_title: 
     syncblocker_title_prefix = syncblocker_title_prefix if syncblocker_title_prefix else ""  # avoid "None" in title
 
     if not event_title:
-        event_title = title_placeholder
+        event_title = title_placeholder or "Blocker"
 
     return syncblocker_title_prefix + event_title
 
