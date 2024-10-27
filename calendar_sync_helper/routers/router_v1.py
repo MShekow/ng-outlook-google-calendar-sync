@@ -156,6 +156,7 @@ async def compute_actions(
         x_unique_sync_prefix: Annotated[str | None, Header()] = None,
         x_syncblocker_title_prefix: Annotated[str | None, Header()] = None,
         x_anonymized_title_placeholder: Annotated[str | None, Header()] = None,
+        x_ignore_description_equality_check: Annotated[str | None, Header()] = None,
 ):
     """
     Figures out which cal1 SB events to delete, which ones to update, which ones to create, returning these actions as
@@ -169,6 +170,8 @@ async def compute_actions(
     if not is_valid_sync_prefix(x_unique_sync_prefix):
         raise HTTPException(status_code=400, detail="Invalid X-Unique-Sync-Prefix value, must only contain "
                                                     "alphanumeric characters and dashes")
+
+    ignore_description_equality_check = get_boolean_header_value(x_ignore_description_equality_check)
 
     events_to_delete: list[AbstractCalendarEvent] = []
     events_to_update: list[AbstractCalendarEvent] = []
@@ -210,7 +213,8 @@ async def compute_actions(
                     strip_syncblocker_title_prefix(abstract_cal1_sb_event.title,
                                                    x_syncblocker_title_prefix) != event.title or
                     abstract_cal1_sb_event.location != event.location or
-                    abstract_cal1_sb_event.description != event.description or
+                    (not ignore_description_equality_check
+                     and abstract_cal1_sb_event.description != event.description) or
                     abstract_cal1_sb_event.start != event.start or
                     abstract_cal1_sb_event.end != event.end or
                     abstract_cal1_sb_event.is_all_day != event.is_all_day or
