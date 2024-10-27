@@ -2,7 +2,6 @@ import re
 from datetime import UTC, datetime
 from typing import Optional
 
-from bs4 import BeautifulSoup
 from fastapi import HTTPException
 
 from calendar_sync_helper.entities.entities_v1 import ImplSpecificEvent, GoogleCalendarEvent, AbstractCalendarEvent, \
@@ -164,31 +163,3 @@ def filter_outdated_events(input_data: ComputeActionsInput):
     input_data.cal1events = \
         [e for e in input_data.cal1events if AbstractCalendarEvent.from_implementation(e).start >= now]
     input_data.cal2events = [e for e in input_data.cal2events if e.start >= now]
-
-
-def is_equal_html_or_text(description1: str, description2: str) -> bool:
-    """
-    If both descriptions are HTML, this function returns whether their textual content is the same (ignoring the
-    concrete markup). Otherwise, normal string equality of both descriptions is returned.
-
-    We do this because some calendar providers, such as Outlook 365, add funky stuff to the <head> section (e.g. in
-    the <head><script> section, they add blocks such as "div.WordSection1 {}", and that is always added again),
-    or to the <body> (e.g. "data-imagetype" tags to <img>s). The consequence would be that for all those affected
-    events, "compute-actions" would think that their description is different, and keep adding those events to
-    "events_to_update".
-    """
-    if not description1.startswith("<html>") or not description2.startswith("<html>"):
-        return description1 == description2
-
-    try:
-        d1 = BeautifulSoup(description1, 'html.parser')
-        d2 = BeautifulSoup(description2, 'html.parser')
-        if d1.text != d2.text:
-            return False
-
-        # We also want to check whether any of the contained links targets have changed:
-        d1_hrefs = [link.get("href") for link in d1.find_all("a")]
-        d2_hrefs = [link.get("href") for link in d2.find_all("a")]
-        return d1_hrefs == d2_hrefs
-    except:
-        return description1 == description2
