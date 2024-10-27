@@ -11,7 +11,7 @@ from calendar_sync_helper.entities.entities_v1 import CalendarEventList, Outlook
     ComputeActionsInput, GoogleCalendarEvent, ComputeActionsResponse
 from calendar_sync_helper.utils import is_syncblocker_event, separate_syncblocker_events, get_id_from_attendees, \
     build_syncblocker_attendees, get_syncblocker_title, fix_outlook_specific_field_defaults, get_boolean_header_value, \
-    is_valid_sync_prefix, strip_syncblocker_title_prefix, clean_id, filter_outdated_events, is_equal_ignoring_html_head
+    is_valid_sync_prefix, strip_syncblocker_title_prefix, clean_id, filter_outdated_events, is_equal_html_or_text
 
 router = APIRouter()
 
@@ -210,7 +210,7 @@ async def compute_actions(
                     strip_syncblocker_title_prefix(abstract_cal1_sb_event.title,
                                                    x_syncblocker_title_prefix) != event.title or
                     abstract_cal1_sb_event.location != event.location or
-                    not is_equal_ignoring_html_head(abstract_cal1_sb_event.description, event.description) or
+                    not is_equal_html_or_text(abstract_cal1_sb_event.description, event.description) or
                     abstract_cal1_sb_event.start != event.start or
                     abstract_cal1_sb_event.end != event.end or
                     abstract_cal1_sb_event.is_all_day != event.is_all_day or
