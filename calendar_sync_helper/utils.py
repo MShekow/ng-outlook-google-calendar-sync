@@ -1,9 +1,23 @@
 import re
+from datetime import UTC, datetime
 from typing import Optional
 
 from fastapi import HTTPException
 
-from calendar_sync_helper.entities.entities_v1 import ImplSpecificEvent, GoogleCalendarEvent, AbstractCalendarEvent
+from calendar_sync_helper.entities.entities_v1 import ImplSpecificEvent, GoogleCalendarEvent, AbstractCalendarEvent, \
+    ComputeActionsInput
+
+
+def _get_actual_utc_datetime() -> datetime:
+    return datetime.now(tz=UTC)
+
+
+# Temporarily patched by pytest fixture "mock_date" during automated tests
+GET_UTC_DATE_FUNCTION = _get_actual_utc_datetime
+
+
+def get_current_utc_date() -> datetime:
+    return GET_UTC_DATE_FUNCTION()
 
 
 def extract_attendees(event: ImplSpecificEvent) -> list[str]:
@@ -141,3 +155,11 @@ def clean_id(unclean_id: str) -> str:
     # Some calendar providers (Outlook) may use mixed upper/lower case, but we cannot and should not use mixed case in
     # the (case-INsensitive) attendee email address
     return cleaned_id.lower()
+
+
+def filter_outdated_events(input_data: ComputeActionsInput):
+    now = get_current_utc_date()
+
+    input_data.cal1events = \
+        [e for e in input_data.cal1events if AbstractCalendarEvent.from_implementation(e).start >= now]
+    input_data.cal2events = [e for e in input_data.cal2events if e.start >= now]

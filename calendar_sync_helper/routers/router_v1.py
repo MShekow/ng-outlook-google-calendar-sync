@@ -11,7 +11,7 @@ from calendar_sync_helper.entities.entities_v1 import CalendarEventList, Outlook
     ComputeActionsInput, GoogleCalendarEvent, ComputeActionsResponse
 from calendar_sync_helper.utils import is_syncblocker_event, separate_syncblocker_events, get_id_from_attendees, \
     build_syncblocker_attendees, get_syncblocker_title, fix_outlook_specific_field_defaults, get_boolean_header_value, \
-    is_valid_sync_prefix, strip_syncblocker_title_prefix, clean_id
+    is_valid_sync_prefix, strip_syncblocker_title_prefix, clean_id, filter_outdated_events
 
 router = APIRouter()
 
@@ -81,7 +81,7 @@ async def extract_events(
 ):
     """
     Returns a list of the real(!) events, normalizing the data structure of the events from different calendar
-    providers.
+    providers. Blocker events are filtered out from the response.
 
     If x_anonymize_fields is set to a boolean value (e.g. to "1" or "yes"), the "sensitive" fields
     (specifically: title, location and description) are cleared, i.e., the values are set to empty strings in the
@@ -160,6 +160,8 @@ async def compute_actions(
     """
     Figures out which cal1 SB events to delete, which ones to update, which ones to create, returning these actions as
     3 lists.
+
+    Only events that start after <now> (server-time) are considered.
     """
     if not x_unique_sync_prefix:
         raise HTTPException(status_code=400, detail="You must provide the X-Unique-Sync-Prefix header")
@@ -171,6 +173,8 @@ async def compute_actions(
     events_to_delete: list[AbstractCalendarEvent] = []
     events_to_update: list[AbstractCalendarEvent] = []
     events_to_create: list[AbstractCalendarEvent] = []
+
+    filter_outdated_events(input_data)
 
     cal1_real, cal1_syncblocker = separate_syncblocker_events(input_data.cal1events, x_unique_sync_prefix)
     cleaned_cal2_ids = {clean_id(event.sync_correlation_id) for event in input_data.cal2events}

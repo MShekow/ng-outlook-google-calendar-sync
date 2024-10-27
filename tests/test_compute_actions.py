@@ -20,6 +20,8 @@ DEFAULT_HEADERS = {
 
 EMPTY_INPUT_DATA = jsonable_encoder(ComputeActionsInput(cal1events=[], cal2events=[]))
 
+DEFAULT_TEST_DATETIME = "2024-10-20T18:00:00Z"
+
 
 def test_fail_binary_input_format(test_client: TestClient):
     response = test_client.post(URL, content=b"hello world")
@@ -55,7 +57,8 @@ def test_fail_malformed_unique_sync_prefix(test_client: TestClient, malformed_sy
                                          "alphanumeric characters and dashes"}
 
 
-def test_fail_impossible_attendee_padding(test_client: TestClient):
+@pytest.mark.parametrize("mock_date", [DEFAULT_TEST_DATETIME], indirect=True)
+def test_fail_impossible_attendee_padding(test_client: TestClient, mock_date):
     data = ComputeActionsInput(
         cal1events=[],
         cal2events=[
@@ -90,7 +93,8 @@ def test_success_empty_data(test_client: TestClient):
     assert not response_data.events_to_delete
 
 
-def test_success_delete_syncblocker(test_client: TestClient):
+@pytest.mark.parametrize("mock_date", [DEFAULT_TEST_DATETIME], indirect=True)
+def test_success_delete_syncblocker(test_client: TestClient, mock_date):
     data = ComputeActionsInput(
         cal1events=[
             OutlookCalendarEvent(
@@ -98,8 +102,8 @@ def test_success_delete_syncblocker(test_client: TestClient):
                 subject="Real event",
                 body="",
                 location="",
-                startWithTimeZone="2024-09-09T07:00:00+00:00",
-                endWithTimeZone="2024-09-09T08:00:00+00:00",
+                startWithTimeZone="2024-10-20T18:00:00+00:00",
+                endWithTimeZone="2024-10-20T19:00:00+00:00",
                 requiredAttendees="",
                 responseType="organizer",
                 isAllDay=False,
@@ -111,8 +115,8 @@ def test_success_delete_syncblocker(test_client: TestClient):
                 subject="Some title",
                 body="",
                 location="",
-                startWithTimeZone="2024-09-09T07:00:00+00:00",
-                endWithTimeZone="2024-09-09T08:00:00+00:00",
+                startWithTimeZone="2024-10-21T18:00:00+00:00",
+                endWithTimeZone="2024-10-21T18:30:00+00:00",
                 requiredAttendees=f"{DEFAULT_UNIQUE_SYNC_PREFIX}@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-040000008200E00174C5B7101A82E008000000000D82237BAD16DB0100000000000000001000000086F553E2D6F24149BC9B223050FB0BD9.invalid;",
                 responseType="organizer",
                 isAllDay=False,
@@ -128,7 +132,7 @@ def test_success_delete_syncblocker(test_client: TestClient):
     assert not response_data.events_to_update
     assert response_data.events_to_delete == [
         AbstractCalendarEvent(sync_correlation_id='syncblockerevent', title='Some title', description='', location='',
-                              start="2024-09-09T07:00:00+00:00", end="2024-09-09T08:00:00+00:00",
+                              start="2024-10-21T18:00:00+00:00", end="2024-10-21T18:30:00+00:00",
                               is_all_day=False, attendees=None, show_as='busy', sensitivity='normal')
     ]
 
@@ -137,7 +141,8 @@ def test_success_delete_syncblocker(test_client: TestClient):
     "syncblocker_title_prefix",
     ["", "SyncBlocker: "]
 )
-def test_success_create_syncblocker(test_client: TestClient, syncblocker_title_prefix: str):
+@pytest.mark.parametrize("mock_date", [DEFAULT_TEST_DATETIME], indirect=True)
+def test_success_create_syncblocker(test_client: TestClient, syncblocker_title_prefix: str, mock_date):
     data = ComputeActionsInput(
         cal1events=[],
         cal2events=[
@@ -180,7 +185,8 @@ def test_success_create_syncblocker(test_client: TestClient, syncblocker_title_p
 
 
 @pytest.mark.parametrize("syncblocker_title_prefix", ["", "SyncBlocker: "])
-def test_success_no_action_all_equal(test_client: TestClient, syncblocker_title_prefix: str):
+@pytest.mark.parametrize("mock_date", ["2024-09-09T07:00:00+00:00"], indirect=True)
+def test_success_no_action_all_equal(test_client: TestClient, syncblocker_title_prefix: str, mock_date):
     data = ComputeActionsInput(
         cal1events=[
             OutlookCalendarEvent(
@@ -196,6 +202,19 @@ def test_success_no_action_all_equal(test_client: TestClient, syncblocker_title_
                 showAs="busy",
                 sensitivity="normal"
             ),
+            OutlookCalendarEvent(
+                id="old-syncblockerevent",  # should be ignored / filtered out by compute-actions endpoint
+                subject=f"{syncblocker_title_prefix}Some older event",
+                body="b",
+                location="l",
+                startWithTimeZone="2024-08-09T07:00:00+00:00",  # event happened one month before the mock_date
+                endWithTimeZone="2024-08-09T08:00:00+00:00",
+                requiredAttendees=f"{DEFAULT_UNIQUE_SYNC_PREFIX}@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-040000008200e00174c5b7101a82e008000000000d82237bad16db0100000000000000001000000086f553e2d6f24149bc9b223050fb0bd9.invalid",
+                responseType="organizer",
+                isAllDay=False,
+                showAs="busy",
+                sensitivity="normal"
+            ),
         ],
         cal2events=[
             AbstractCalendarEvent(
@@ -205,6 +224,18 @@ def test_success_no_action_all_equal(test_client: TestClient, syncblocker_title_
                 location="l",
                 start="2024-09-09T07:00:00Z",
                 end="2024-09-09T08:00:00Z",
+                is_all_day=False,
+                attendees=None,
+                show_as=None,
+                sensitivity=None
+            ),
+            AbstractCalendarEvent(
+                sync_correlation_id="140000008200E00174C5B7101A82E008000000000D82237BAD16DB0100000000000000001000000086F553E2D6F24149BC9B223050FB0BD9",
+                title="Some older event",  # should be ignored / filtered out by compute-actions endpoint
+                description="b",
+                location="l",
+                start="2024-08-09T07:00:00Z",
+                end="2024-08-09T08:00:00Z",
                 is_all_day=False,
                 attendees=None,
                 show_as=None,
@@ -310,9 +341,10 @@ def _update_event_fields(event: ImplSpecificEvent | AbstractCalendarEvent, updat
     ]
 )
 @pytest.mark.parametrize("update_side", [EventUpdateSide.calendar1, EventUpdateSide.calendar2])
+@pytest.mark.parametrize("mock_date", ["2024-09-09T07:00:00+00:00"], indirect=True)
 def test_success_update_syncblocker(test_client: TestClient, syncblocker_title_prefix: str,
                                     update_operation: EventUpdateOperation,
-                                    update_side: EventUpdateSide):
+                                    update_side: EventUpdateSide, mock_date):
     data = ComputeActionsInput(
         cal1events=[
             OutlookCalendarEvent(
