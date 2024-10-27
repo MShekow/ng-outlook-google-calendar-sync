@@ -2,6 +2,7 @@ import re
 from datetime import UTC, datetime
 from typing import Optional
 
+from bs4 import BeautifulSoup
 from fastapi import HTTPException
 
 from calendar_sync_helper.entities.entities_v1 import ImplSpecificEvent, GoogleCalendarEvent, AbstractCalendarEvent, \
@@ -163,3 +164,24 @@ def filter_outdated_events(input_data: ComputeActionsInput):
     input_data.cal1events = \
         [e for e in input_data.cal1events if AbstractCalendarEvent.from_implementation(e).start >= now]
     input_data.cal2events = [e for e in input_data.cal2events if e.start >= now]
+
+
+def is_equal_ignoring_html_head(description1: str, description2: str) -> bool:
+    """
+    If both descriptions are HTML, this function returns whether their <body> content is the same (ignoring the
+    <head>). Otherwise, normal string equality of both descriptions is returned.
+
+    We do this because some calendar providers, such as Outlook 365, add funky stuff to the <head> section (e.g. in
+    the <head><script> section, they add blocks such as "div.WordSection1 {}", and that is always added again). The
+    consequence would be that for all those events, "compute-actions" would think that their description is
+    different, and keep adding those events to "events_to_update".
+    """
+    if not description1.startswith("<html>") or not description2.startswith("<html>"):
+        return description1 == description2
+
+    try:
+        d1 = BeautifulSoup(description1)
+        d2 = BeautifulSoup(description2)
+        return d1.body == d2.body
+    except:
+        return description1 == description2
