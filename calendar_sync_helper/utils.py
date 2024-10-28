@@ -100,13 +100,16 @@ def build_syncblocker_attendees(unique_sync_prefix: str, real_event_correlation_
     return f"{unique_sync_prefix}@{padding}-{cleaned_real_event_correlation_id}.invalid"
 
 
+DEFAULT_ANONYMIZED_TITLE_PLACEHOLDER = "Blocker"
+
+
 def get_syncblocker_title(syncblocker_title_prefix: Optional[str], event_title: str,
                           anonymized_title_placeholder: Optional[str]) -> str:
     title_placeholder = anonymized_title_placeholder if anonymized_title_placeholder else ""  # avoid "None" in title
     syncblocker_title_prefix = syncblocker_title_prefix if syncblocker_title_prefix else ""  # avoid "None" in title
 
     if not event_title:
-        event_title = title_placeholder or "Blocker"
+        event_title = title_placeholder or DEFAULT_ANONYMIZED_TITLE_PLACEHOLDER
 
     return syncblocker_title_prefix + event_title
 
@@ -119,12 +122,18 @@ def fix_outlook_specific_field_defaults(event: AbstractCalendarEvent):
         event.sensitivity = "normal"
 
 
-def strip_syncblocker_title_prefix(event_title: str, syncblocker_title_prefix: Optional[str]) -> str:
-    if not syncblocker_title_prefix:
-        return event_title
+def has_matching_title(syncblocker_event_title: str, event_title: str, syncblocker_title_prefix: Optional[str],
+                       anonymized_title_placeholder: Optional[str]) -> bool:
+    if event_title:
+        if syncblocker_title_prefix:
+            return syncblocker_event_title == syncblocker_title_prefix + event_title
+        return syncblocker_event_title == event_title
 
-    if event_title.startswith(syncblocker_title_prefix):
-        return event_title[len(syncblocker_title_prefix):]
+    # data is anonymized
+    title_placeholder = anonymized_title_placeholder or DEFAULT_ANONYMIZED_TITLE_PLACEHOLDER
+    if syncblocker_title_prefix:
+        return syncblocker_event_title == syncblocker_title_prefix + title_placeholder
+    return syncblocker_event_title == title_placeholder
 
 
 def get_boolean_header_value(raw_header: Optional[str]) -> bool:

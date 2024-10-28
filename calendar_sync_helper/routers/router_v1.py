@@ -11,7 +11,7 @@ from calendar_sync_helper.entities.entities_v1 import CalendarEventList, Outlook
     ComputeActionsInput, GoogleCalendarEvent, ComputeActionsResponse
 from calendar_sync_helper.utils import is_syncblocker_event, separate_syncblocker_events, get_id_from_attendees, \
     build_syncblocker_attendees, get_syncblocker_title, fix_outlook_specific_field_defaults, get_boolean_header_value, \
-    is_valid_sync_prefix, strip_syncblocker_title_prefix, clean_id, filter_outdated_events
+    is_valid_sync_prefix, clean_id, filter_outdated_events, has_matching_title
 
 router = APIRouter()
 
@@ -171,6 +171,13 @@ async def compute_actions(
         raise HTTPException(status_code=400, detail="Invalid X-Unique-Sync-Prefix value, must only contain "
                                                     "alphanumeric characters and dashes")
 
+    # Strip leading and trailing double quotes, to allow for prefixes such as "Foo: " (FastAPI would otherwise
+    # strip trailing spaces from header values, resulting in "Foo:")
+    syncblocker_title_prefix = x_syncblocker_title_prefix
+    if (x_syncblocker_title_prefix
+            and x_syncblocker_title_prefix.startswith('"') and x_syncblocker_title_prefix.endswith('"')):
+        syncblocker_title_prefix = x_syncblocker_title_prefix.lstrip('"').rstrip('"')
+
     ignore_description_equality_check = get_boolean_header_value(x_ignore_description_equality_check)
 
     events_to_delete: list[AbstractCalendarEvent] = []
@@ -195,7 +202,7 @@ async def compute_actions(
             event_to_create = copy(event)
             event_to_create.attendees = build_syncblocker_attendees(x_unique_sync_prefix,
                                                                     real_event_correlation_id=event.sync_correlation_id)
-            event_to_create.title = get_syncblocker_title(x_syncblocker_title_prefix, event.title,
+            event_to_create.title = get_syncblocker_title(syncblocker_title_prefix, event.title,
                                                           x_anonymized_title_placeholder)
             event_to_create.sync_correlation_id = ""
             fix_outlook_specific_field_defaults(event_to_create)
@@ -210,8 +217,8 @@ async def compute_actions(
             # In case cal2 contains Google events, make sure the comparison below works
             fix_outlook_specific_field_defaults(event)
             if (
-                    strip_syncblocker_title_prefix(abstract_cal1_sb_event.title,
-                                                   x_syncblocker_title_prefix) != event.title or
+                    not has_matching_title(abstract_cal1_sb_event.title, event.title, syncblocker_title_prefix,
+                                           x_anonymized_title_placeholder) or
                     abstract_cal1_sb_event.location != event.location or
                     (not ignore_description_equality_check
                      and abstract_cal1_sb_event.description != event.description) or
@@ -228,7 +235,7 @@ async def compute_actions(
                 event_to_update.sync_correlation_id = abstract_cal1_sb_event.sync_correlation_id
                 event_to_update.attendees = build_syncblocker_attendees(x_unique_sync_prefix,
                                                                         real_event_correlation_id=event.sync_correlation_id)
-                event_to_update.title = get_syncblocker_title(x_syncblocker_title_prefix, event.title,
+                event_to_update.title = get_syncblocker_title(syncblocker_title_prefix, event.title,
                                                               x_anonymized_title_placeholder)
                 fix_outlook_specific_field_defaults(event_to_update)
                 events_to_update.append(event_to_update)
