@@ -3,6 +3,15 @@ from fastapi.testclient import TestClient
 
 URL = "/retrieve-calendar-file-proxy"
 
+INVALID_FILE_LOCATIONS = [
+    "foo://bar",
+    "localhost",
+    "http://localhost",  # See https://github.com/python-validators/validators/issues/392 for why this is invalid
+    "some-string",
+    "ftp://example.com",
+    "//example.com/foo/bar",
+]
+
 
 @pytest.mark.parametrize(
     "incomplete_headers",
@@ -20,15 +29,7 @@ def test_fail_missing_headers(test_client: TestClient, incomplete_headers: dict[
     assert response.json() == {"detail": "Missing required headers"}
 
 
-@pytest.mark.parametrize(
-    "invalid_file_location",
-    [
-        "foo://bar",
-        "some-string",
-        "ftp://example.com",
-        "//example.com/foo/bar",
-    ],
-)
+@pytest.mark.parametrize("invalid_file_location", INVALID_FILE_LOCATIONS)
 def test_fail_invalid_url(test_client: TestClient, invalid_file_location: str):
     headers = {
         "X-File-Location": invalid_file_location,
