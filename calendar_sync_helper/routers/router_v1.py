@@ -29,7 +29,7 @@ async def retrieve_calendar_file_proxy(
         x_auth_header_value: Annotated[str | None, Header()] = None
 ):
     """
-    Retrieves the real entries of a calendar stored in a file that is protected by an "Authentication" header, thus
+    Retrieves the real entries of a calendar stored in a file that is protected by an "Authorization" header, thus
     cannot be retrieved by the "Send an HTTP request to SharePoint" action directly.
     """
     if not x_file_location or not x_auth_header_name or not x_auth_header_value:
