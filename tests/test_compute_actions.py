@@ -311,6 +311,64 @@ def test_success_no_action_all_equal_anonymized_data(test_client: TestClient, ca
     )
 
 
+@pytest.mark.parametrize("set_ignore_header", [False, True])
+@pytest.mark.parametrize("mock_date", ["2024-09-09T07:00:00+00:00"], indirect=True)
+def test_success_no_action_all_equal_ignore_description_equality(test_client: TestClient, set_ignore_header: bool, mock_date):
+    data = ComputeActionsInput(
+        cal1events=[
+            OutlookCalendarEvent(
+                id="syncblockerevent",
+                subject="Some event",
+                body="foo",
+                location="l",
+                startWithTimeZone="2024-09-09T07:00:00+00:00",
+                endWithTimeZone="2024-09-09T08:00:00+00:00",
+                requiredAttendees=f"{DEFAULT_UNIQUE_SYNC_PREFIX}@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-040000008200e00174c5b7101a82e008000000000d82237bad16db0100000000000000001000000086f553e2d6f24149bc9b223050fb0bd9.invalid",
+                responseType="organizer",
+                isAllDay=False,
+                showAs="busy",
+                sensitivity="normal"
+            )
+        ],
+        cal2events=[
+            AbstractCalendarEvent(
+                sync_correlation_id="040000008200E00174C5B7101A82E008000000000D82237BAD16DB0100000000000000001000000086F553E2D6F24149BC9B223050FB0BD9",
+                title="Some event",
+                description="different than for calendar 1 event!",
+                location="l",
+                start="2024-09-09T07:00:00Z",
+                end="2024-09-09T08:00:00Z",
+                is_all_day=False,
+                attendees=None,
+                show_as=None,
+                sensitivity=None
+            )
+        ]
+    )
+    headers = copy(DEFAULT_HEADERS)
+    if set_ignore_header:
+        headers["X-Ignore-Description-Equality-Check"] = "True"
+
+    response = test_client.post(URL, json=jsonable_encoder(data), headers=headers)
+    response_data = ComputeActionsResponse(**response.json())
+
+    if set_ignore_header:
+        assert response_data == ComputeActionsResponse(
+            events_to_delete=[],
+            events_to_update=[],
+            events_to_create=[]
+        )
+    else:
+        expected_event = AbstractCalendarEvent.from_implementation(data.cal1events[0])
+        expected_event.description = data.cal2events[0].description
+        expected_event.attendees = data.cal1events[0].requiredAttendees
+        assert response_data == ComputeActionsResponse(
+            events_to_delete=[],
+            events_to_update=[expected_event],
+            events_to_create=[]
+        )
+
+
 class EventUpdateOperation(Enum):
     title = 1
     description = 2
@@ -466,4 +524,63 @@ def test_success_update_syncblocker(test_client: TestClient, syncblocker_title_p
         events_to_delete=[],
         events_to_update=[expected_event],
         events_to_create=[]
+    )
+
+
+@pytest.mark.parametrize(
+    "syncblocker_title_prefix,anonymized_title_placeholder,cal2_event_title,expected_syncblocker_title", [
+        ("", "", "", "Blocker"),
+        ("", "", "Hello", "Hello"),
+        ("SB:", "", "", "SB:Blocker"),
+        ("SB:", "", "Hello", "SB:Hello"),
+        ("", "MyBlocker", "", "MyBlocker"),
+        ("", "MyBlocker", "Hello", "Hello"),
+        ("SB:", "MyBlocker", "", "SB:MyBlocker"),
+        ("SB:", "MyBlocker", "Hello", "SB:Hello"),
+    ])
+@pytest.mark.parametrize("mock_date", ["2024-09-09T07:00:00+00:00"], indirect=True)
+def test_success_create_with_anonymized_title_placeholder(test_client: TestClient, syncblocker_title_prefix: str,
+                                                          anonymized_title_placeholder: str, cal2_event_title: str,
+                                                          expected_syncblocker_title: str, mock_date):
+    data = ComputeActionsInput(
+        cal1events=[],
+        cal2events=[
+            AbstractCalendarEvent(
+                sync_correlation_id="040000008200E00174C5B7101A82E008000000000D82237BAD16DB0100000000000000001000000086F553E2D6F24149BC9B223050FB0BD9",
+                title=cal2_event_title,
+                description="",
+                location="",
+                start="2024-09-09T07:00:00Z",
+                end="2024-09-09T08:00:00Z",
+                is_all_day=False,
+                attendees=None,
+                show_as=None,
+                sensitivity=None
+            )
+        ]
+    )
+
+    headers = copy(DEFAULT_HEADERS)
+    headers["X-Syncblocker-Title-Prefix"] = syncblocker_title_prefix
+    headers["X-Anonymized-Title-Placeholder"] = anonymized_title_placeholder
+    response = test_client.post(URL, json=jsonable_encoder(data), headers=headers)
+    response_data = ComputeActionsResponse(**response.json())
+
+    assert response_data == ComputeActionsResponse(
+        events_to_delete=[],
+        events_to_update=[],
+        events_to_create=[
+            AbstractCalendarEvent(
+                sync_correlation_id="",
+                title=expected_syncblocker_title,
+                description="",
+                location="",
+                start="2024-09-09T07:00:00Z",
+                end="2024-09-09T08:00:00Z",
+                is_all_day=False,
+                attendees=f"{DEFAULT_UNIQUE_SYNC_PREFIX}@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-040000008200e00174c5b7101a82e008000000000d82237bad16db0100000000000000001000000086f553e2d6f24149bc9b223050fb0bd9.invalid",
+                show_as="busy",
+                sensitivity="normal"
+            )
+        ]
     )
