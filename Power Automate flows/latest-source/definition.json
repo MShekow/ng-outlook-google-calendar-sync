@@ -1,0 +1,1881 @@
+{
+  "name": "5d2849b2-1c2a-4739-b273-ab4b9e739664",
+  "id": "/providers/Microsoft.Flow/flows/5d2849b2-1c2a-4739-b273-ab4b9e739664",
+  "type": "Microsoft.Flow/flows",
+  "properties": {
+    "apiId": "/providers/Microsoft.PowerApps/apis/shared_logicflows",
+    "displayName": "NG Outlook Google calendar sync v0.1 - release",
+    "definition": {
+      "metadata": {
+        "workflowEntityId": null,
+        "processAdvisorMetadata": null,
+        "flowChargedByPaygo": null,
+        "flowclientsuspensionreason": "None",
+        "flowclientsuspensiontime": null,
+        "flowclientsuspensionreasondetails": null,
+        "creator": {
+          "id": "6a3f8d4b-482b-4acb-9128-c4748e9b93a1",
+          "type": "User",
+          "tenantId": "331e8350-a57c-43c3-9a37-d76cf8000f52"
+        },
+        "provisioningMethod": "FromDefinition",
+        "failureAlertSubscription": true,
+        "clientLastModifiedTime": "2024-11-01T10:00:01.6938073Z",
+        "connectionKeySavedTimeKey": "2024-11-01T10:00:01.6938073Z"
+      },
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "Setting:_Trigger_interval": {
+          "recurrence": {
+            "frequency": "Day",
+            "interval": 1,
+            "timeZone": "W. Europe Standard Time",
+            "startTime": "2023-02-10T09:00:00Z",
+            "schedule": {
+              "hours": [
+                "0",
+                "1",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6",
+                "7",
+                "8",
+                "9",
+                "10",
+                "11",
+                "12",
+                "13",
+                "14",
+                "15",
+                "16",
+                "17",
+                "18",
+                "19",
+                "20",
+                "21",
+                "22",
+                "23"
+              ],
+              "minutes": [
+                0
+              ]
+            }
+          },
+          "metadata": {
+            "operationMetadataId": "8b7dd129-9e4d-4f52-8c69-8ac663bd9bd4"
+          },
+          "type": "Recurrence",
+          "description": "Because of strong limitations in the \"free\" PowerAutomate plan, it is recommended to only run the flow a few times per day. There is also a daily limit, so not running the flow at night will benefit you.",
+          "runtimeConfiguration": {
+            "concurrency": {
+              "runs": 1
+            }
+          }
+        }
+      },
+      "actions": {
+        "Setting:_Prefix_for_SyncBlocker_event_titles_(optional)": {
+          "runAfter": {
+            "Setting:_Calendar_provider_for_calendar_2": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "c2eb347b-cc0c-40ce-b882-b8f7a2a67f1b"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "syncBlockerTitlePrefix",
+                "type": "string"
+              }
+            ]
+          },
+          "description": "Optional prefix that helps you identify the SyncBlocker events in your calendar (if the cal 1 provider is Outlook, you can instead use the category setting below). If you want a value that ends with a space, e.g. \"SB: \", include quotes in the value."
+        },
+        "Setting:_Days_to_sync": {
+          "runAfter": {
+            "Setting:_unique_sync_prefix": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "c6c9bce7-28b3-43e5-9c4f-56a93a4c7410"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "daysToSync",
+                "type": "integer",
+                "value": 1
+              }
+            ]
+          },
+          "description": "The number of days (starting from \"now\") that each flow execution will look into the future, to sync your calendar events."
+        },
+        "Setting:_create_SyncBlocker_events_only_for_these_responses_(Outlook-only)": {
+          "runAfter": {
+            "Setting:_Days_to_sync": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "58e8213b-64b2-4136-a174-31b63a6e9515"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "eventResponseTypes",
+                "type": "string",
+                "value": "organizer,accepted,tentativelyAccepted"
+              }
+            ]
+          },
+          "description": "Defines the response types that events in calendar 2 need to have, so that this flow creates SyncBlocker events for them. Provide them as comma-separated list. Possible values: organizer,accepted,tentativelyAccepted,notResponded,none"
+        },
+        "Setting:_name_of_cal1": {
+          "runAfter": {
+            "Setting:_category_for_SyncBlocker_events_in_calendar_1_(Outlook-only)": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "75a68ad0-8f47-4558-961c-fb7fbfcf9602"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "nameCalendar1",
+                "type": "string",
+                "value": "Calendar"
+              }
+            ]
+          },
+          "description": "If the provider for calendar 1 is \"outlook\", set this to the name of calendar 1 as shown in Outlook. For provider \"google\", use your gmail address."
+        },
+        "Setting:_name_of_cal2": {
+          "runAfter": {
+            "Setting:_name_of_cal1": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "61c938ee-7dc1-4b58-9d51-999e0f6c7dc8"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "nameCalendar2",
+                "type": "string",
+                "value": "something@gmail.com"
+              }
+            ]
+          },
+          "description": "If the provider for calendar 2 is \"outlook\", set this to the name of calendar 2 as shown in Outlook. For provider \"google\", use your gmail address. Otherwise, your provided value is ignored."
+        },
+        "Init_cal2_events": {
+          "runAfter": {
+            "Upload_cal1_events_if_configured": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "3d6fee77-14aa-49ee-b1d2-8d24493c3f3c"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "cal2",
+                "type": "array"
+              }
+            ]
+          }
+        },
+        "Setting:_SyncBlocker_event_reminder_(Outlook-only)": {
+          "runAfter": {
+            "Setting:_create_SyncBlocker_events_only_for_these_responses_(Outlook-only)": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "a4526ee2-00f3-4cc9-bb64-f0c01f17ffa8"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "reminderEnabled",
+                "type": "boolean",
+                "value": true
+              }
+            ]
+          },
+          "description": "Configures whether Outlook should show a reminder for SyncBlocker events."
+        },
+        "Setting:_SyncBlocker_event_reminder_minutes_(Outlook-only)": {
+          "runAfter": {
+            "Setting:_SyncBlocker_event_reminder_(Outlook-only)": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "0800697f-e04c-4c38-a25d-618f124de482"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "reminderMinutes",
+                "type": "integer",
+                "value": 15
+              }
+            ]
+          },
+          "description": "If you set the above setting (\"SyncBlocker event reminder\") to true, this setting configures how many minutes (prior to the sync-blocker event start time) Outlook should show the event notification / reminder."
+        },
+        "Setting:_Abort_flow_on_too_many_events": {
+          "runAfter": {
+            "Setting:_SyncBlocker_event_reminder_minutes_(Outlook-only)": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b857bbbe-289f-42da-8106-b8356fa5c5c6"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "eventCountUpperLimit",
+                "type": "integer",
+                "value": 250
+              }
+            ]
+          },
+          "description": "If your \"Days to sync\" setting is too high (resulting in too many events in that timeframe), this flow is aborted with an error, as a precautionary measure. Don't use values higher than 250 for Google or 1000 for Outlook (platform-side limits)."
+        },
+        "Setting:_category_for_SyncBlocker_events_in_calendar_1_(Outlook-only)": {
+          "runAfter": {
+            "Setting:_ignore_description_comparison": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "24697e02-d308-42a1-a703-6d29ef673f68"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "categoryCal1",
+                "type": "array",
+                "value": []
+              }
+            ]
+          },
+          "description": "You can colorize your sync blocker events by assigning a category to them (whose names+colors you manage in Outlook). To assign a category for the blocker events in calendar 1, provide something like [\"mycategory\"]"
+        },
+        "Setting:_sync_events_without_other_attendees": {
+          "runAfter": {
+            "Setting:_anonymized_SyncBlocker_event_title_(optional)": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "75645468-f46f-4ba6-a821-ba2f28fd564f"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "syncEventsWithoutAttendees",
+                "type": "boolean",
+                "value": true
+              }
+            ]
+          },
+          "description": "Set this to false if you do not want to synchronize events from calendar 2 that have no other attendees, e.g. because you created them just for yourself (e.g. reminders for a doctor's appointment)."
+        },
+        "Setting:_hide_event_details_in_SyncBlocker_events": {
+          "runAfter": {
+            "Setting:_Abort_flow_on_too_many_events": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "a2c7d924-273c-46c9-8ccc-2ef8bbc7c92b"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "hideDetails",
+                "type": "boolean",
+                "value": false
+              }
+            ]
+          },
+          "description": "If you set this to true, the sync blocker event in calendar 1 will not have the real subject, location and body of the corresponding real calendar 2 event, but a dummy text. This is useful for privacy reasons"
+        },
+        "Setting:_calendar_sync_helper_server_URL": {
+          "runAfter": {
+            "Setting:_name_of_cal2": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "c293f6d0-3e3a-499a-ac9e-cb1eedd870eb"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "syncHelperServerUrl",
+                "type": "string",
+                "value": "https://ng-outlook-google-calendar-sync.onrender.com/v1"
+              }
+            ]
+          },
+          "description": "The base URL of the sync helper service. The default value is a free offer that you can use, or you change the URL to a self-hosted a service."
+        },
+        "Setting:_Dry_Run": {
+          "runAfter": {
+            "Setting:_calendar_2_download_authentication_header_value_(optional)": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "0fcaf55e-ad87-4304-a1a0-1771f17f45f7"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "dryRun",
+                "type": "boolean",
+                "value": true
+              }
+            ]
+          },
+          "description": "If set to true, your calendar is not modified. You can manually verify the output of the \"Compute calendar modification actions\" block first."
+        },
+        "Setting:_Calendar_provider_for_calendar1": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "df4186ac-fb3d-4f48-9b75-f7e8e28fdc80"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "cal1provider",
+                "type": "string",
+                "value": "outlook"
+              }
+            ]
+          },
+          "description": "Selects the provider for calendar 1 (the one this flow instances writes SyncBlocker events to). One of: outlook, google"
+        },
+        "Setting:_Calendar_provider_for_calendar_2": {
+          "runAfter": {
+            "Setting:_Calendar_provider_for_calendar1": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "c5483e3e-5f51-4b8b-bb2e-1b5b42291987"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "cal2provider",
+                "type": "string",
+                "value": "google"
+              }
+            ]
+          },
+          "description": "Selects the provider for calendar 2 (whose \"real\" events this flow is about to copy into calendar 1). One of: outlook, google, or a http(s) URL that points to a file that contains the calendar 2 events."
+        },
+        "Find_correct_calendar_1_and_load_calendar_events_(Outlook)": {
+          "actions": {
+            "Get_calendars_of_Outlook_account_1": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "369df8f5-ba70-4bc6-bcd9-97a87e0e6f77"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                  "connectionName": "shared_office365",
+                  "operationId": "CalendarGetTables_V2"
+                },
+                "parameters": {},
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Find_correct_Outlook_calendar_1": {
+              "runAfter": {
+                "Get_calendars_of_Outlook_account_1": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "54c7e0cc-7527-4583-b40a-b9ca93a4d023"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@outputs('Get_calendars_of_Outlook_account_1')?['body/value']",
+                "where": "@equals(item()?['name'], variables('nameCalendar1'))"
+              }
+            },
+            "Check_that_Outlook_calendar_1_exists": {
+              "actions": {
+                "Set_Outlook_calendar_1_ID": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "262f1a20-6007-48bb-bbeb-8c741bf7263d"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "cal1id",
+                    "value": "@{body('Find_correct_Outlook_calendar_1')[0]['id']}"
+                  }
+                }
+              },
+              "runAfter": {
+                "Find_correct_Outlook_calendar_1": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Terminate_1": {
+                    "runAfter": {},
+                    "metadata": {
+                      "operationMetadataId": "f6a8b9e8-ed64-4eaf-abee-f16f813cf265"
+                    },
+                    "type": "Terminate",
+                    "inputs": {
+                      "runStatus": "Failed",
+                      "runError": {
+                        "message": "The Outlook calendar with the provided name could not be found"
+                      }
+                    }
+                  }
+                }
+              },
+              "expression": {
+                "and": [
+                  {
+                    "equals": [
+                      "@length(body('Find_correct_Outlook_calendar_1'))",
+                      1
+                    ]
+                  }
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "3afd25ac-85ce-4294-be30-0ae30e827ab4"
+              },
+              "type": "If"
+            },
+            "Get_Outlook_calendar_view_of_events_cal1": {
+              "runAfter": {
+                "Check_that_Outlook_calendar_1_exists": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "94900ef5-ceda-4429-94e3-72473f7f7c2f"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                  "connectionName": "shared_office365",
+                  "operationId": "GetEventsCalendarViewV3"
+                },
+                "parameters": {
+                  "calendarId": "@variables('cal1id')",
+                  "startDateTimeUtc": "@utcNow()",
+                  "endDateTimeUtc": "@addDays(utcNow(), variables('daysToSync'))",
+                  "$orderby": "Start/DateTime",
+                  "$top": "@variables('eventCountUpperLimit')"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Check_event_count_Outlook_calendar_1": {
+              "actions": {
+                "Terminate_2": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "c4940fe7-6365-4291-af1a-3a2463ce0ac7"
+                  },
+                  "type": "Terminate",
+                  "inputs": {
+                    "runStatus": "Failed",
+                    "runError": {
+                      "message": "There were too many events in your calendar -> unable to retrieve all events for the requested number of @{variables('daysToSync')} days. This could lead to duplicated events, so this flow run is aborted as a safety measure."
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Get_Outlook_calendar_view_of_events_cal1": [
+                  "Succeeded"
+                ]
+              },
+              "expression": {
+                "equals": [
+                  "@length(body('Get_Outlook_calendar_view_of_events_cal1')?['value'])",
+                  "@variables('eventCountUpperLimit')"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "914f40f3-0e18-4778-b39f-3ea79c569226"
+              },
+              "type": "If"
+            },
+            "Store_Outlook_calendar_1_events": {
+              "runAfter": {
+                "Check_event_count_Outlook_calendar_1": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "e255152f-4ee1-40db-a642-1f84047f708c"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "cal1",
+                "value": "@outputs('Get_Outlook_calendar_view_of_events_cal1')?['body/value']"
+              }
+            }
+          },
+          "runAfter": {
+            "Init_cal1_events": [
+              "Succeeded"
+            ]
+          },
+          "expression": {
+            "equals": [
+              "@variables('cal1provider')",
+              "outlook"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "708cbc86-5bc4-4a23-9b9a-216397c8a9d5"
+          },
+          "type": "If"
+        },
+        "Setting:_location_of_remote_file_to_upload_calendar_1_data_to_(optional)": {
+          "runAfter": {
+            "Setting:_calendar_sync_helper_server_URL": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "fcacf397-706f-42f8-948b-c918c5ff3f2a"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "cal1uploadLocation",
+                "type": "string"
+              }
+            ]
+          },
+          "description": "The https URL to which to upload your calendar 1 events. Leave this empty if you do not want to upload any events."
+        },
+        "Init_calendar_1_ID_variable": {
+          "runAfter": {
+            "Setting:_Dry_Run": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "3dc295a3-c996-43dc-a24f-426c5a418f98"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "cal1id",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Init_calendar_2_ID_variable": {
+          "runAfter": {
+            "Init_calendar_1_ID_variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "62b6c611-9d30-421d-a371-f9e00430c663"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "cal2id",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "Init_cal1_events": {
+          "runAfter": {
+            "Init_calendar_2_ID_variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "53e2aa68-210c-4d5f-acde-9df3c4ab12bf"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "cal1",
+                "type": "array"
+              }
+            ]
+          }
+        },
+        "Upload_cal1_events_if_configured": {
+          "actions": {
+            "Upload_cal1_events_via_HTTP": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "f4030334-b97a-498e-80f4-7d5929986531"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "@variables('syncHelperServerUrl')",
+                  "parameters/method": "POST",
+                  "parameters/uri": "/extract-events",
+                  "parameters/headers": {
+                    "X-Unique-Sync-Prefix": "@variables('uniqueSyncPrefix')",
+                    "X-Anonymize-Fields": "@{variables('anonymizeFieldsInUpload')}",
+                    "X-Sync-Events-Without-Attendees": "@{variables('syncEventsWithoutAttendees')}",
+                    "X-Relevant-Response-Types": "@variables('eventResponseTypes')",
+                    "X-File-Location": "@variables('cal1uploadLocation')",
+                    "X-Upload-Http-Method": "@variables('uploadHttpMethod')",
+                    "X-Auth-Header-Name": "@variables('cal1uploadAuthHeaderName')",
+                    "X-Auth-Header-Value": "@variables('cal1uploadAuthHeaderValue')"
+                  },
+                  "parameters/body": "{\"events\": @{variables('cal1')}}"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            }
+          },
+          "runAfter": {
+            "Find_correct_calendar_1_and_load_calendar_events_(Google)": [
+              "Succeeded"
+            ]
+          },
+          "expression": {
+            "startsWith": [
+              "@variables('cal1uploadLocation')",
+              "http"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "8528ab0d-ffb8-4e0a-8809-52925a606c2e"
+          },
+          "type": "If"
+        },
+        "Setting:_unique_sync_prefix": {
+          "runAfter": {
+            "Setting:_Prefix_for_SyncBlocker_event_titles_(optional)": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "14dd8efc-5172-48ba-9a28-e49f456fd377"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "uniqueSyncPrefix",
+                "type": "string",
+                "value": "syncer"
+              }
+            ]
+          },
+          "description": "A random alphanumeric sequence, will be used in the attendee email of SyncBlocker events, before the \"@\" symbol. Only a-z, 0-9 and dashes are supported. Do NOT change this value afterwards, or you will get duplicated events!"
+        },
+        "Setting:_calendar_1_anonymize_data_in_uploaded_remote_file_(optional)": {
+          "runAfter": {
+            "Setting:_calendar_1_remote_file_upload_-_authentication_header_value_(optional)": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "0d175eb5-db84-42d1-8ea3-2cd9ffb17f52"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "anonymizeFieldsInUpload",
+                "type": "boolean",
+                "value": false
+              }
+            ]
+          },
+          "description": "In case you provided a http(s) URL in the previous setting: should the event title, location and description be omitted during the upload, for privacy reasons?"
+        },
+        "Setting:_calendar_1_remote_file_HTTP_upload_method_(optional)": {
+          "runAfter": {
+            "Setting:_location_of_remote_file_to_upload_calendar_1_data_to_(optional)": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "28694379-11a8-4e3f-809d-4f8b96721490"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "uploadHttpMethod",
+                "type": "string",
+                "value": "put"
+              }
+            ]
+          },
+          "description": "In case you provided a http(s) URL in the previous setting: which HTTP method does your remote file location expect? (put or post)"
+        },
+        "Setting:_calendar_1_remote_file_upload_-_authentication_header_name_(optional)": {
+          "runAfter": {
+            "Setting:_calendar_1_remote_file_HTTP_upload_method_(optional)": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "051d22dd-6ae1-4293-84e3-c1fa402414cf"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "cal1uploadAuthHeaderName",
+                "type": "string",
+                "value": "Authorization"
+              }
+            ]
+          },
+          "description": "In case you provided a http(s) URL in the previous setting: if the upload location requires authentication via a header, provide its name here. Do NOT leave this field empty!"
+        },
+        "Setting:_calendar_1_remote_file_upload_-_authentication_header_value_(optional)": {
+          "runAfter": {
+            "Setting:_calendar_1_remote_file_upload_-_authentication_header_name_(optional)": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "cbb6ffba-a0ca-4806-ab5a-d7a66440e126"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "cal1uploadAuthHeaderValue",
+                "type": "string",
+                "value": "Basic 8wnsdf0u2fousd23sdfsdfsdf="
+              }
+            ]
+          },
+          "description": "In case you provided a http(s) URL in the previous setting: if the upload location requires authentication via a header, provide its value here. E.g. \"Basic f23fsdh24=\" or \"Bearer fsdf45sfsdf\"."
+        },
+        "Get_cal2_data_(Outlook)": {
+          "actions": {
+            "Get_calendars_of_Outlook_account_2": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "72d46988-9571-4981-a15e-1e684d202c61"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                  "connectionName": "shared_office365_1",
+                  "operationId": "CalendarGetTables_V2"
+                },
+                "parameters": {},
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Find_correct_Outlook_calendar_2": {
+              "runAfter": {
+                "Get_calendars_of_Outlook_account_2": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "b93ca6ca-f2ce-4c9f-8b74-a4b595da94ae"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@outputs('Get_calendars_of_Outlook_account_2')?['body/value']",
+                "where": "@equals(item()?['name'], variables('nameCalendar2'))"
+              }
+            },
+            "Check_that_Outlook_calendar_2_exists": {
+              "actions": {},
+              "runAfter": {
+                "Find_correct_Outlook_calendar_2": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Terminate_4": {
+                    "runAfter": {},
+                    "metadata": {
+                      "operationMetadataId": "d7e24e2e-3b25-4267-be93-a804dbeb9f07"
+                    },
+                    "type": "Terminate",
+                    "inputs": {
+                      "runStatus": "Failed",
+                      "runError": {
+                        "message": "The Outlook calendar with the provided name could not be found"
+                      }
+                    }
+                  }
+                }
+              },
+              "expression": {
+                "equals": [
+                  "@length(body('Find_correct_Outlook_calendar_2'))",
+                  1
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "fdb0a2fd-820d-46d6-82a6-6b1372da948e"
+              },
+              "type": "If"
+            },
+            "Get_Outlook_calendar_view_of_events_cal2": {
+              "runAfter": {
+                "Check_that_Outlook_calendar_2_exists": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "c14c6268-ad42-4985-a636-efff77bda8b1"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                  "connectionName": "shared_office365_1",
+                  "operationId": "GetEventsCalendarViewV3"
+                },
+                "parameters": {
+                  "calendarId": "@body('Find_correct_Outlook_calendar_2')[0]['id']",
+                  "startDateTimeUtc": "@utcNow()",
+                  "endDateTimeUtc": "@addDays(utcNow(), variables('daysToSync'))",
+                  "$orderby": "Start/DateTime",
+                  "$top": "@variables('eventCountUpperLimit')"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Check_event_count_Outlook_calendar_2": {
+              "actions": {
+                "Terminate_5": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "1a537faa-bb89-4f9b-b8dc-23cabb96c4fa"
+                  },
+                  "type": "Terminate",
+                  "inputs": {
+                    "runStatus": "Failed",
+                    "runError": {
+                      "message": "There were too many events in your calendar -> unable to retrieve all events for the requested number of @{variables('daysToSync')} days. This could lead to duplicated events, so this flow run is aborted as a safety measure."
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Get_Outlook_calendar_view_of_events_cal2": [
+                  "Succeeded"
+                ]
+              },
+              "expression": {
+                "equals": [
+                  "@length(body('Get_Outlook_calendar_view_of_events_cal2')?['value'])",
+                  "@variables('eventCountUpperLimit')"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "8da5592a-6e5a-42be-af3d-e54f0b1aa7e9"
+              },
+              "type": "If"
+            },
+            "Get_Outlook_cal2_events_from_sync_helper_server": {
+              "runAfter": {
+                "Check_event_count_Outlook_calendar_2": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "5007e776-2eb0-40e3-8471-bda9686fe0a8"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "@variables('syncHelperServerUrl')",
+                  "parameters/method": "POST",
+                  "parameters/uri": "/extract-events",
+                  "parameters/headers": {
+                    "X-Unique-Sync-Prefix": "@variables('uniqueSyncPrefix')",
+                    "X-Anonymize-Fields": "@{variables('hideDetails')}",
+                    "X-Sync-Events-Without-Attendees": "@{variables('syncEventsWithoutAttendees')}",
+                    "X-Relevant-Response-Types": "@variables('eventResponseTypes')"
+                  },
+                  "parameters/body": "{\"events\": @{body('Get_Outlook_calendar_view_of_events_cal2')?['value']}}"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Store_Outlook_cal2_events_in_cal2": {
+              "runAfter": {
+                "Get_Outlook_cal2_events_from_sync_helper_server": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "9bde464e-22d9-42e3-8a85-2e2340f477a0"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "cal2",
+                "value": "@body('Get_Outlook_cal2_events_from_sync_helper_server')"
+              }
+            }
+          },
+          "runAfter": {
+            "Init_cal2_events": [
+              "Succeeded"
+            ]
+          },
+          "expression": {
+            "equals": [
+              "@variables('cal2provider')",
+              "outlook"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "8ada5472-cc34-4798-a9e6-b1ec30c1be12"
+          },
+          "type": "If"
+        },
+        "Get_cal2_data_(Google)": {
+          "actions": {
+            "Get_calendars_of_Google_account_2": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "9382ba25-d7b9-44b5-9e85-e627f115ad3c"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_googlecalendar",
+                  "connectionName": "shared_googlecalendar_1",
+                  "operationId": "ListCalendars"
+                },
+                "parameters": {
+                  "minAccessRole": "reader"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Find_correct_Google_calendar_2": {
+              "runAfter": {
+                "Get_calendars_of_Google_account_2": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "679f4233-9233-4b88-8710-5f22cc22d2c6"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@outputs('Get_calendars_of_Google_account_2')?['body/items']",
+                "where": "@equals(item()?['id'], variables('nameCalendar2'))"
+              }
+            },
+            "Check_that_Google_calendar_2_exists": {
+              "actions": {},
+              "runAfter": {
+                "Find_correct_Google_calendar_2": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Terminate_6": {
+                    "runAfter": {},
+                    "metadata": {
+                      "operationMetadataId": "31ed3a9b-b765-429f-99d0-dfb4995e2005"
+                    },
+                    "type": "Terminate",
+                    "inputs": {
+                      "runStatus": "Failed",
+                      "runError": {
+                        "message": "The Google calendar with the provided name could not be found"
+                      }
+                    }
+                  }
+                }
+              },
+              "expression": {
+                "equals": [
+                  "@length(body('Find_correct_Google_calendar_2'))",
+                  1
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "9fd0adf6-cef6-4f75-8d03-b7cf36fc3fd9"
+              },
+              "type": "If"
+            },
+            "Get_Google_calendar_view_of_events_cal2": {
+              "runAfter": {
+                "Check_that_Google_calendar_2_exists": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "ccaa400c-f1f1-49c6-bde5-890301ac96b4"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_googlecalendar",
+                  "connectionName": "shared_googlecalendar_1",
+                  "operationId": "ListEvents"
+                },
+                "parameters": {
+                  "calendarId": "@variables('nameCalendar2')",
+                  "timeMin": "@utcNow()",
+                  "timeMax": "@addDays(utcNow(), variables('daysToSync'))"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Check_event_count_Google_calendar_2": {
+              "actions": {
+                "Terminate_7": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "5ee27672-6145-4705-b19a-936f897e988e"
+                  },
+                  "type": "Terminate",
+                  "inputs": {
+                    "runStatus": "Failed",
+                    "runError": {
+                      "message": "There were too many events in your calendar -> unable to retrieve all events for the requested number of @{variables('daysToSync')} days. This could lead to duplicated events, so this flow run is aborted as a safety measure."
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Get_Google_calendar_view_of_events_cal2": [
+                  "Succeeded"
+                ]
+              },
+              "expression": {
+                "equals": [
+                  "@length(body('Get_Google_calendar_view_of_events_cal2')?['items'])",
+                  "@variables('eventCountUpperLimit')"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "32b5bc12-2144-4da4-9edf-484ab0751614"
+              },
+              "type": "If"
+            },
+            "Get_Google_cal2_events_from_sync_helper_server": {
+              "runAfter": {
+                "Check_event_count_Google_calendar_2": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "a61aff2b-ba06-413f-a5fe-898aa13cd1a6"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "@variables('syncHelperServerUrl')",
+                  "parameters/method": "POST",
+                  "parameters/uri": "/extract-events",
+                  "parameters/headers": {
+                    "X-Unique-Sync-Prefix": "@variables('uniqueSyncPrefix')",
+                    "X-Anonymize-Fields": "@{variables('hideDetails')}",
+                    "X-Sync-Events-Without-Attendees": "@{variables('syncEventsWithoutAttendees')}",
+                    "X-Relevant-Response-Types": "@variables('eventResponseTypes')"
+                  },
+                  "parameters/body": "{\"events\": @{body('Get_Google_calendar_view_of_events_cal2')?['items']}}"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Store_Google_cal2_events_in_cal2": {
+              "runAfter": {
+                "Get_Google_cal2_events_from_sync_helper_server": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "a3a67dda-adf6-47c8-ab5b-525282673c41"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "cal2",
+                "value": "@body('Get_Google_cal2_events_from_sync_helper_server')"
+              }
+            }
+          },
+          "runAfter": {
+            "Get_cal2_data_(Outlook)": [
+              "Succeeded"
+            ]
+          },
+          "expression": {
+            "equals": [
+              "@variables('cal2provider')",
+              "google"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "070b688d-4477-48e5-a54b-6fe5d58a75ef"
+          },
+          "type": "If"
+        },
+        "Get_cal2_data_(file_or_URL)": {
+          "actions": {
+            "Download_calendar_2_file": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "66a2c23e-6ebb-4eaa-9d95-3d7e5cfc87f7"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "HttpRequest"
+                },
+                "parameters": {
+                  "dataset": "@variables('syncHelperServerUrl')",
+                  "parameters/method": "GET",
+                  "parameters/uri": "/retrieve-calendar-file-proxy",
+                  "parameters/headers": {
+                    "X-File-Location": "@variables('cal2provider')",
+                    "X-Auth-Header-Name": "@variables('cal2downloadAuthHeaderName')",
+                    "X-Auth-Header-Value": "@variables('cal2downloadAuthHeaderValue')"
+                  }
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Store_file-based_cal2_events_in_cal2": {
+              "runAfter": {
+                "Download_calendar_2_file": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "c0352e29-4db9-4da8-9d5b-8e440075bc48"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "cal2",
+                "value": "@body('Download_calendar_2_file')"
+              }
+            }
+          },
+          "runAfter": {
+            "Get_cal2_data_(Google)": [
+              "Succeeded"
+            ]
+          },
+          "expression": {
+            "startsWith": [
+              "@variables('cal2provider')",
+              "http"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "fecc5350-ec18-4eff-a50f-d98b54ceb1a0"
+          },
+          "type": "If"
+        },
+        "Setting:_calendar_2_download_authentication_header_name_(optional)": {
+          "runAfter": {
+            "Setting:_calendar_1_anonymize_data_in_uploaded_remote_file_(optional)": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "99ee3ca7-17d1-4856-b0e5-f66be3c91c12"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "cal2downloadAuthHeaderName",
+                "type": "string",
+                "value": "Authorization"
+              }
+            ]
+          },
+          "description": "In case you set the calendar 2 provider to a https URL, provide the name of the authentication header. Do NOT leave this field empty."
+        },
+        "Setting:_calendar_2_download_authentication_header_value_(optional)": {
+          "runAfter": {
+            "Setting:_calendar_2_download_authentication_header_name_(optional)": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "8dec2b74-3d77-4fcc-9d9d-8aa3ce5d8cf5"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "cal2downloadAuthHeaderValue",
+                "type": "string",
+                "value": "Basic 8wnsdf0u2fousd23sdfsdfsdf="
+              }
+            ]
+          },
+          "description": "In case you set the calendar 2 provider to a https URL, provide the value of the authentication header. E.g. \"Basic f23fsdh24=\" or \"Bearer fsdf45sfsdf\"."
+        },
+        "Compute_calendar_modification_actions": {
+          "runAfter": {
+            "Get_cal2_data_(file_or_URL)": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "955db350-1f27-4dee-9375-11609139ee5d"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "HttpRequest"
+            },
+            "parameters": {
+              "dataset": "@variables('syncHelperServerUrl')",
+              "parameters/method": "POST",
+              "parameters/uri": "/compute-actions",
+              "parameters/headers": {
+                "X-Unique-Sync-Prefix": "@variables('uniqueSyncPrefix')",
+                "X-SyncBlocker-Title-Prefix": "@variables('syncBlockerTitlePrefix')",
+                "X-Anonymized-Title-Placeholder": "@variables('anonymizedSbTitle')",
+                "X-Ignore-Description-Equality-Check": "@{variables('ignoreDescriptionComparison')}"
+              },
+              "parameters/body": "{\"cal1events\": @{variables('cal1')}, \"cal2events\": @{variables('cal2')}}"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Setting:_anonymized_SyncBlocker_event_title_(optional)": {
+          "runAfter": {
+            "Setting:_hide_event_details_in_SyncBlocker_events": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "06185be9-19c5-4ae9-bd90-cbf41c151ce3"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "anonymizedSbTitle",
+                "type": "string"
+              }
+            ]
+          },
+          "description": "If you set the previous setting to true, this configures the title of Sync Blocker events (if left empty, \"Blocker\" will be used)"
+        },
+        "Terminate_this_flow_if_dry_run": {
+          "actions": {
+            "Terminate_8": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "df612230-a528-4695-bccd-7c3f5fcab1ce"
+              },
+              "type": "Terminate",
+              "inputs": {
+                "runStatus": "Succeeded"
+              }
+            }
+          },
+          "runAfter": {
+            "Compute_calendar_modification_actions": [
+              "Succeeded"
+            ]
+          },
+          "expression": {
+            "equals": [
+              "@variables('dryRun')",
+              true
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "7b6a6d52-f4e7-4e3d-9e15-5cd653679b62"
+          },
+          "type": "If"
+        },
+        "Create_update_or_delete_SyncBlocker_events_(Outlook)": {
+          "actions": {
+            "Outlook_delete_events_loop": {
+              "foreach": "@body('Compute_calendar_modification_actions')['events_to_delete']",
+              "actions": {
+                "Delete_event_(V2)": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "af655d0d-2f76-435e-9339-63e69a148bdd"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                      "connectionName": "shared_office365",
+                      "operationId": "CalendarDeleteItem_V2"
+                    },
+                    "parameters": {
+                      "calendar": "@variables('cal1id')",
+                      "event": "@items('Outlook_delete_events_loop')['sync_correlation_id']"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              },
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "0d2b4039-a03e-4601-af12-d9867e252cdc"
+              },
+              "type": "Foreach"
+            },
+            "Outlook_create_events_loop": {
+              "foreach": "@body('Compute_calendar_modification_actions')['events_to_create']",
+              "actions": {
+                "Create_event_(V4)": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "49cc3e29-0a99-40c7-82ea-85bf49491827"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                      "connectionName": "shared_office365",
+                      "operationId": "V4CalendarPostItem"
+                    },
+                    "parameters": {
+                      "table": "@variables('cal1id')",
+                      "item/subject": "@items('Outlook_create_events_loop')['title']",
+                      "item/start": "@items('Outlook_create_events_loop')['start']",
+                      "item/end": "@items('Outlook_create_events_loop')['end']",
+                      "item/timeZone": "(UTC) Coordinated Universal Time",
+                      "item/requiredAttendees": "@items('Outlook_create_events_loop')['attendees']",
+                      "item/body": "@items('Outlook_create_events_loop')['description']",
+                      "item/categories": "@variables('categoryCal1')",
+                      "item/location": "@items('Outlook_create_events_loop')['location']",
+                      "item/isAllDay": "@items('Outlook_create_events_loop')['is_all_day']",
+                      "item/reminderMinutesBeforeStart": "@variables('reminderMinutes')",
+                      "item/isReminderOn": "@variables('reminderEnabled')",
+                      "item/showAs": "@items('Outlook_create_events_loop')['show_as']",
+                      "item/responseRequested": false,
+                      "item/sensitivity": "@items('Outlook_create_events_loop')['sensitivity']"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              },
+              "runAfter": {
+                "Outlook_delete_events_loop": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "f3ef2cfd-9ee8-45b7-bfd9-68aaa063482c"
+              },
+              "type": "Foreach"
+            },
+            "Outlook_update_events_loop": {
+              "foreach": "@body('Compute_calendar_modification_actions')['events_to_update']",
+              "actions": {
+                "Update_event_(V4)": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "20b6038c-a844-4976-bf8b-9fbd9092a330"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                      "connectionName": "shared_office365",
+                      "operationId": "V4CalendarPatchItem"
+                    },
+                    "parameters": {
+                      "table": "@variables('cal1id')",
+                      "id": "@items('Outlook_update_events_loop')['sync_correlation_id']",
+                      "item/subject": "@items('Outlook_update_events_loop')['title']",
+                      "item/start": "@items('Outlook_update_events_loop')['start']",
+                      "item/end": "@items('Outlook_update_events_loop')['end']",
+                      "item/timeZone": "(UTC) Coordinated Universal Time",
+                      "item/requiredAttendees": "@items('Outlook_update_events_loop')['attendees']",
+                      "item/body": "@items('Outlook_update_events_loop')['description']",
+                      "item/categories": "@variables('categoryCal1')",
+                      "item/location": "@items('Outlook_update_events_loop')['location']",
+                      "item/isAllDay": "@items('Outlook_update_events_loop')['is_all_day']",
+                      "item/reminderMinutesBeforeStart": "@variables('reminderMinutes')",
+                      "item/isReminderOn": "@variables('reminderEnabled')",
+                      "item/showAs": "@items('Outlook_update_events_loop')['show_as']",
+                      "item/responseRequested": false,
+                      "item/sensitivity": "@items('Outlook_update_events_loop')['sensitivity']"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              },
+              "runAfter": {
+                "Outlook_create_events_loop": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "2fcaa933-a443-45db-976c-d9cf569635ca"
+              },
+              "type": "Foreach"
+            }
+          },
+          "runAfter": {
+            "Terminate_this_flow_if_dry_run": [
+              "Succeeded"
+            ]
+          },
+          "expression": {
+            "equals": [
+              "@variables('cal1provider')",
+              "outlook"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "0893491b-87d0-4b33-aab9-24a06f64c61c"
+          },
+          "type": "If"
+        },
+        "Find_correct_calendar_1_and_load_calendar_events_(Google)": {
+          "actions": {
+            "Get_calendars_of_Google_account_1": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "d3abcf8c-54fa-424f-8cc5-13a4c562c00c"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_googlecalendar",
+                  "connectionName": "shared_googlecalendar",
+                  "operationId": "ListCalendars"
+                },
+                "parameters": {
+                  "minAccessRole": "writer"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Find_correct_Google_calendar_1": {
+              "runAfter": {
+                "Get_calendars_of_Google_account_1": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "864f2169-6fef-40ee-909d-b0c66826046d"
+              },
+              "type": "Query",
+              "inputs": {
+                "from": "@outputs('Get_calendars_of_Google_account_1')?['body/items']",
+                "where": "@equals(item()?['id'], variables('nameCalendar1'))"
+              }
+            },
+            "Check_that_Google_calendar_1_exists": {
+              "actions": {
+                "Set_variable": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "3e0660a8-c926-4eb4-98a6-77154530b7d3"
+                  },
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "cal1id",
+                    "value": "@variables('nameCalendar1')"
+                  }
+                }
+              },
+              "runAfter": {
+                "Find_correct_Google_calendar_1": [
+                  "Succeeded"
+                ]
+              },
+              "else": {
+                "actions": {
+                  "Terminate": {
+                    "runAfter": {},
+                    "metadata": {
+                      "operationMetadataId": "417ed3cb-7f40-4a4f-a520-3b6e5b30606c"
+                    },
+                    "type": "Terminate",
+                    "inputs": {
+                      "runStatus": "Failed",
+                      "runError": {
+                        "message": "The Google calendar with the provided name could not be found"
+                      }
+                    }
+                  }
+                }
+              },
+              "expression": {
+                "equals": [
+                  "@length(body('Find_correct_Google_calendar_1'))",
+                  1
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "dea24898-e0f4-4a1c-b729-930b552055f3"
+              },
+              "type": "If"
+            },
+            "Get_Google_calendar_view_of_events_cal1": {
+              "runAfter": {
+                "Check_that_Google_calendar_1_exists": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "e1d412c4-3bd2-43f3-ac8c-c00c5a9a2344"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_googlecalendar",
+                  "connectionName": "shared_googlecalendar",
+                  "operationId": "ListEvents"
+                },
+                "parameters": {
+                  "calendarId": "@variables('cal1id')",
+                  "timeMin": "@utcNow()",
+                  "timeMax": "@addDays(utcNow(), variables('daysToSync'))"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            },
+            "Check_event_count_Google_calendar_1": {
+              "actions": {
+                "Terminate_3": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "cecb0128-c089-4500-a7a2-9c868ea20741"
+                  },
+                  "type": "Terminate",
+                  "inputs": {
+                    "runStatus": "Failed",
+                    "runError": {
+                      "message": "There were too many events in your calendar -> unable to retrieve all events for the requested number of @{variables('daysToSync')} days. This could lead to duplicated events, so this flow run is aborted as a safety measure."
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Get_Google_calendar_view_of_events_cal1": [
+                  "Succeeded"
+                ]
+              },
+              "expression": {
+                "equals": [
+                  "@length(body('Get_Google_calendar_view_of_events_cal1')?['items'])",
+                  "@variables('eventCountUpperLimit')"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "30b3adaa-4235-41f7-9f8f-636e5d4f42e9"
+              },
+              "type": "If"
+            },
+            "Store_Google_calendar_1_events": {
+              "runAfter": {
+                "Check_event_count_Google_calendar_1": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "f4799f30-88ce-456c-8749-af69d65160ca"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "cal1",
+                "value": "@outputs('Get_Google_calendar_view_of_events_cal1')?['body/items']"
+              }
+            }
+          },
+          "runAfter": {
+            "Find_correct_calendar_1_and_load_calendar_events_(Outlook)": [
+              "Succeeded"
+            ]
+          },
+          "expression": {
+            "equals": [
+              "@variables('cal1provider')",
+              "google"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "3bf84ac0-c8d5-43a6-a616-6db7cfa4542a"
+          },
+          "type": "If"
+        },
+        "Create_update_or_delete_SyncBlocker_events_(Google)": {
+          "actions": {
+            "Google_delete_events_loop": {
+              "foreach": "@body('Compute_calendar_modification_actions')['events_to_delete']",
+              "actions": {
+                "Delete_an_event": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "29c93e10-5ae7-474a-9546-35913dc2bfab"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_googlecalendar",
+                      "connectionName": "shared_googlecalendar",
+                      "operationId": "DeleteEvent"
+                    },
+                    "parameters": {
+                      "calendarId": "@variables('cal1id')",
+                      "eventId": "@items('Google_delete_events_loop')['sync_correlation_id']"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              },
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "b66bfae8-b5e4-4cfc-8c75-8d5826180686"
+              },
+              "type": "Foreach"
+            },
+            "Google_create_events_loop": {
+              "foreach": "@body('Compute_calendar_modification_actions')['events_to_create']",
+              "actions": {
+                "Create_an_event": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "ba4959a1-cb7f-424b-b343-bbf885f239dd"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_googlecalendar",
+                      "connectionName": "shared_googlecalendar",
+                      "operationId": "CreateEvent"
+                    },
+                    "parameters": {
+                      "calendarId": "@variables('cal1id')",
+                      "newEvent/start": "@items('Google_create_events_loop')['start']",
+                      "newEvent/end": "@items('Google_create_events_loop')['end']",
+                      "newEvent/summary": "@items('Google_create_events_loop')['title']",
+                      "newEvent/description": "@items('Google_create_events_loop')['description']",
+                      "newEvent/location": "@items('Google_create_events_loop')['location']",
+                      "newEvent/isAllDay": "@items('Google_create_events_loop')['is_all_day']",
+                      "newEvent/attendees": "@items('Google_create_events_loop')['attendees']"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              },
+              "runAfter": {
+                "Google_delete_events_loop": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "3da92fbe-3500-4d64-8fbc-ab38897545da"
+              },
+              "type": "Foreach"
+            },
+            "Google_update_events_loop": {
+              "foreach": "@body('Compute_calendar_modification_actions')['events_to_update']",
+              "actions": {
+                "Update_an_event": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "77711d5a-b3bc-4af5-9027-d4313c12f7c9"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_googlecalendar",
+                      "connectionName": "shared_googlecalendar",
+                      "operationId": "UpdateEvent"
+                    },
+                    "parameters": {
+                      "calendarId": "@variables('cal1id')",
+                      "eventId": "@items('Google_update_events_loop')['sync_correlation_id']",
+                      "updatedEvent/summary": "@items('Google_update_events_loop')['title']",
+                      "updatedEvent/start": "@items('Google_update_events_loop')['start']",
+                      "updatedEvent/end": "@items('Google_update_events_loop')['end']",
+                      "updatedEvent/description": "@items('Google_update_events_loop')['description']",
+                      "updatedEvent/location": "@items('Google_update_events_loop')['location']",
+                      "updatedEvent/isAllDay": "@items('Google_update_events_loop')['is_all_day']",
+                      "updatedEvent/attendees": "@items('Google_update_events_loop')['attendees']"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                }
+              },
+              "runAfter": {
+                "Google_create_events_loop": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "b73f7793-4ee8-4f1c-b78e-4edcef7b50ee"
+              },
+              "type": "Foreach"
+            }
+          },
+          "runAfter": {
+            "Create_update_or_delete_SyncBlocker_events_(Outlook)": [
+              "Succeeded"
+            ]
+          },
+          "expression": {
+            "equals": [
+              "@variables('cal1provider')",
+              "google"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "1ee6bd2c-a33b-41f6-8127-eb4ca40a2989"
+          },
+          "type": "If"
+        },
+        "Setting:_ignore_description_comparison": {
+          "runAfter": {
+            "Setting:_sync_events_without_other_attendees": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "9d013eed-5a0d-458d-9f6a-7ce878cfd080"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "ignoreDescriptionComparison",
+                "type": "boolean",
+                "value": false
+              }
+            ]
+          },
+          "description": "Whether the \"compute actions\" algorithm should ignore differences in the event's description, when comparing two events. If you synchronize with Outlook, and you observe that each flow execution needlessly UPDATES many events, set this to true."
+        }
+      },
+      "description": "See https://github.com/MShekow/outlook-calendar-sync"
+    },
+    "connectionReferences": {
+      "shared_office365": {
+        "connectionName": "shared-office365-60785805-c0f6-42e7-953f-862bc362d824",
+        "source": "Embedded",
+        "id": "/providers/Microsoft.PowerApps/apis/shared_office365",
+        "tier": "NotSpecified"
+      },
+      "shared_sharepointonline": {
+        "connectionName": "shared-sharepointonl-fb4e9012-0832-4171-8379-d40d087147c7",
+        "source": "Embedded",
+        "id": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+        "tier": "NotSpecified"
+      },
+      "shared_office365_1": {
+        "connectionName": "620b01eae7bc4ae1b15115cae405ae54",
+        "source": "Embedded",
+        "id": "/providers/Microsoft.PowerApps/apis/shared_office365",
+        "tier": "NotSpecified"
+      },
+      "shared_googlecalendar_1": {
+        "connectionName": "97a1ce29588b48cdb14fc460ae751929",
+        "source": "Embedded",
+        "id": "/providers/Microsoft.PowerApps/apis/shared_googlecalendar",
+        "tier": "NotSpecified"
+      },
+      "shared_googlecalendar": {
+        "connectionName": "a5644c53f9694551864e8353b972b9eb",
+        "source": "Embedded",
+        "id": "/providers/Microsoft.PowerApps/apis/shared_googlecalendar",
+        "tier": "NotSpecified"
+      }
+    },
+    "flowFailureAlertSubscribed": false,
+    "isManaged": false
+  }
+}
