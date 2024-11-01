@@ -44,9 +44,7 @@ async def retrieve_calendar_file_proxy(
         headers = {
             x_auth_header_name: x_auth_header_value
         }
-        async with client.stream("GET", x_file_location, headers=headers) as response:
-            # response = await client.get(x_file_location, headers=headers, follow_redirects=True)
-
+        async with client.stream("GET", x_file_location, headers=headers, follow_redirects=True) as response:
             if response.status_code != 200:
                 raise HTTPException(status_code=400, detail=f"Failed to retrieve file, "
                                                             f"response status: {response.status_code}")
