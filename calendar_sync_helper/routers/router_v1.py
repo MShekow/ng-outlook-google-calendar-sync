@@ -40,29 +40,34 @@ async def retrieve_calendar_file_proxy(
         raise HTTPException(status_code=400, detail="Invalid file location, must be a valid http(s) URL")
 
     # Make HTTP request
-    async with httpx.AsyncClient() as client:
-        headers = {
-            x_auth_header_name: x_auth_header_value
-        }
-        async with client.stream("GET", x_file_location, headers=headers, follow_redirects=True) as response:
-            if response.status_code != 200:
-                raise HTTPException(status_code=400, detail=f"Failed to retrieve file, "
-                                                            f"response status: {response.status_code}")
+    try:
+        async with httpx.AsyncClient() as client:
+            headers = {
+                x_auth_header_name: x_auth_header_value
+            }
+            async with client.stream("GET", x_file_location, headers=headers, follow_redirects=True) as response:
+                if response.status_code != 200:
+                    raise HTTPException(status_code=400, detail=f"Failed to retrieve file, "
+                                                                f"response status: {response.status_code}")
 
-            content_length = response.headers.get("Content-Length")
-            if content_length and int(content_length) > MAX_FILE_SIZE_LIMIT_BYTES:
-                raise HTTPException(status_code=413, detail="File size exceeds maximum size limit")
+                content_length = response.headers.get("Content-Length")
+                if content_length and int(content_length) > MAX_FILE_SIZE_LIMIT_BYTES:
+                    raise HTTPException(status_code=413, detail="File size exceeds maximum size limit")
 
-            # Validate that the response content is a valid JSON
-            try:
-                await response.aread()
-                # Note: just calling response.json() may try to use an incorrect decoding,
-                # e.g. utf-8 where another one must be used
-                json_content = json.loads(response.text)
-            except Exception as e:
-                raise HTTPException(status_code=400, detail=f"Failed to parse JSON content: {str(e)}")
+                # Validate that the response content is a valid JSON
+                try:
+                    await response.aread()
+                    # Note: just calling response.json() may try to use an incorrect decoding,
+                    # e.g. utf-8 where another one must be used
+                    json_content = json.loads(response.text)
+                except Exception as e:
+                    raise HTTPException(status_code=400, detail=f"Failed to parse JSON content: {str(e)}")
 
-            return json_content
+                return json_content
+    except Exception as e:
+        if type(e) == HTTPException:
+            raise e
+        raise HTTPException(status_code=400, detail=f"Failed to retrieve file: {e!r}")
 
 
 @router.post("/extract-events")
@@ -132,18 +137,23 @@ async def extract_events(
         if not x_upload_http_method or x_upload_http_method.lower() not in ["put", "post"]:
             raise HTTPException(status_code=400, detail="Invalid upload method, must be PUT or POST")
 
-        async with httpx.AsyncClient() as client:
-            headers = dict()
-            if x_auth_header_name and x_auth_header_value:
-                headers[x_auth_header_name] = x_auth_header_value
+        try:
+            async with httpx.AsyncClient() as client:
+                headers = dict()
+                if x_auth_header_name and x_auth_header_value:
+                    headers[x_auth_header_name] = x_auth_header_value
 
-            events_as_json_dict = jsonable_encoder(events)
-            response = await client.request(x_upload_http_method, url=x_file_location, headers=headers,
-                                            json=events_as_json_dict)
+                events_as_json_dict = jsonable_encoder(events)
+                response = await client.request(x_upload_http_method, url=x_file_location, headers=headers,
+                                                json=events_as_json_dict)
 
-            if response.status_code < 200 or response.status_code > 204:
-                raise HTTPException(status_code=400, detail=f"Failed to upload file, "
-                                                            f"response status: {response.status_code}")
+                if response.status_code < 200 or response.status_code > 204:
+                    raise HTTPException(status_code=400, detail=f"Failed to upload file, "
+                                                                f"response status: {response.status_code}")
+        except Exception as e:
+            if type(e) == HTTPException:
+                raise e
+            raise HTTPException(status_code=400, detail=f"Failed to upload file: {e!r}")
 
     return events
 

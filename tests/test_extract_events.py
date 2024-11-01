@@ -8,7 +8,7 @@ from pytest_httpserver import HTTPServer
 from calendar_sync_helper.entities.entities_v1 import CalendarEventList, AbstractCalendarEvent
 from tests import parse_abstract_calendar_event_list
 from tests.test_data import load_test_data
-from tests.test_retrieve_calendar_file_proxy import INVALID_FILE_LOCATIONS
+from tests.test_retrieve_calendar_file_proxy import INVALID_FILE_LOCATIONS, UNREACHABLE_FILE_LOCATIONS
 
 URL = "/extract-events"
 UNIQUE_SYNC_PREFIX_HEADER_NAME = "X-Unique-Sync-Prefix"
@@ -62,6 +62,17 @@ def test_fail_invalid_url(test_client: TestClient, invalid_file_location: str):
     response = test_client.post(URL, headers=headers, json={"events": []})
     assert response.status_code == 400
     assert response.json() == {"detail": "Invalid file location, must be a valid http(s) URL"}
+
+
+@pytest.mark.parametrize("unreachable_file_location", UNREACHABLE_FILE_LOCATIONS)
+def test_fail_unreachable_file_location(test_client: TestClient, unreachable_file_location: str):
+    headers = copy(DEFAULT_HEADERS)
+    headers["X-File-Location"] = unreachable_file_location
+    headers["X-Upload-Http-Method"] = "post"
+    response = test_client.post(URL, headers=headers, json={"events": []})
+    assert response.status_code == 400
+    error_msg = response.json()["detail"]
+    assert error_msg.startswith("Failed to upload file:"), f"Unexpected string start: {error_msg}"
 
 
 def test_success_simple_outlook_events(test_client: TestClient):
