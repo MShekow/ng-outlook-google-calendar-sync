@@ -29,6 +29,12 @@
       "matchDatasources": ["docker"],
       "matchUpdateTypes": ["major", "minor"],
       "automerge": false
+    },
+    {
+      "description": "We want explicit PRs for patch-level updates of Python",
+      "matchPackageNames": ["python"],
+      "matchDatasources": ["docker"],
+      "separateMinorPatch": true
     }
   ]
 }
