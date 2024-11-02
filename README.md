@@ -17,7 +17,7 @@ If you want to clean / delete all blocker events:
 - For **Google**, download [this](https://github.com/MShekow/ng-outlook-google-calendar-sync/raw/refs/heads/main/Power%20Automate%20flows/Delete%20SyncBlocker%20events%20(Google).zip) helper PowerAuto flow
 - For **Outlook 365**, download [this](https://github.com/MShekow/ng-outlook-google-calendar-sync/raw/refs/heads/main/Power%20Automate%20flows/Delete%20SyncBlocker%20events%20(Outlook).zip) helper PowerAuto flow
 
-Please see [this blog post](https://www.augmentedmind.de/2024/11/03/next-gen-calendar-sync-for-outlook-and-google/) for details and usage instructions.
+Please see [this blog post](https://www.augmentedmind.de/2024/11/01/ng-calendar-sync-outlook-google/) for details and usage instructions.
 
 ## Changelog of Power Automate Flow
 
