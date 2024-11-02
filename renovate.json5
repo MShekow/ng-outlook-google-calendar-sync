@@ -24,10 +24,10 @@
   ],
   "packageRules": [
     {
-      "description": "We allow automerges everywhere, EXCEPT for major(!) Python upgrades",
+      "description": "We allow automerges everywhere, EXCEPT for major/minor Python upgrades",
       "matchPackageNames": ["python"],
       "matchDatasources": ["docker"],
-      "matchUpdateTypes": ["major"],
+      "matchUpdateTypes": ["major", "minor"],
       "automerge": false
     }
   ]
