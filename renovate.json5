@@ -18,7 +18,7 @@
       "customType": "regex",
       "fileMatch": ["^render\\.yaml$"],
       "matchStrings": [
-        "#\\s?renovate: datasource=(?<datasource>[a-z-]+?) name=(?<depName>.*?)\\s?value:\\s *\\\"?(?<currentValue>[\\w+\\.\\-]*)\""
+        "#\\s?renovate: datasource=(?<datasource>[a-z-]+?) name=(?<depName>.*?)\\s *value:\\s?\\\"?(?<currentValue>[\\w+\\.\\-]*)\""
       ]
     }
   ]
