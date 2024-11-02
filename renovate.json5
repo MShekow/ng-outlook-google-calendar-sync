@@ -21,5 +21,14 @@
         "#\\s?renovate: datasource=(?<datasource>[a-z-]+?) name=(?<depName>.*?)\\s *value:\\s?\\\"?(?<currentValue>[\\w+\\.\\-]*)\""
       ]
     }
+  ],
+  "packageRules": [
+    {
+      "description": "We allow automerges everywhere, EXCEPT for major(!) Python upgrades",
+      "matchPackageNames": ["python"],
+      "matchDatasources": ["docker"],
+      "matchUpdateTypes": ["major"],
+      "automerge": false
+    }
   ]
 }
