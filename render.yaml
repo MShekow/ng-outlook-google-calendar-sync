@@ -8,6 +8,8 @@ services:
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
+        # renovate: datasource=docker name=python
         value: "3.12.5"
       - key: POETRY_VERSION
+        # renovate: datasource=pypi name=poetry
         value: "1.8.3"

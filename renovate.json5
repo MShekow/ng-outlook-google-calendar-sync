@@ -11,5 +11,15 @@
   "lockFileMaintenance": {
     "enabled": true
   },
-  "automerge": true
+  "automerge": true,
+  "customManagers": [
+    {
+      "description": "Update versions in render.yaml",
+      "customType": "regex",
+      "fileMatch": ["^render\\.yaml$"],
+      "matchStrings": [
+        "#\\s?renovate: datasource=(?<datasource>[a-z-]+?) name=(?<depName>.*?)\\s?value:\\s *\\\"?(?<currentValue>[\\w+\\.\\-]*)\""
+      ]
+    }
+  ]
 }
