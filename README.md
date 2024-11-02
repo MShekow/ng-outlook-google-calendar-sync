@@ -44,4 +44,4 @@ The Python-based sync helper service uses [Poetry](https://python-poetry.org/) f
 
 ### Running tests
 
-Run `pytest tests` to run all unit / integration tests defined in the `tests` folder.
+Run `pytest tests` to run all unit or integration tests defined in the `tests` folder.
