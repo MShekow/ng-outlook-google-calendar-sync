@@ -17,4 +17,4 @@ optional = true
 
 [tool.poetry.group.test.dependencies]
 pytest = "8.3.3"
-pytest-httpserver = "^1.1.0"
+pytest-httpserver = "1.1.0"
