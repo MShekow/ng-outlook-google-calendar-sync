@@ -4,9 +4,11 @@ from typing import Annotated
 
 import httpx
 import validators
+from cryptography.exceptions import InvalidTag
 from fastapi import Header, HTTPException, APIRouter
 from fastapi.encoders import jsonable_encoder
 
+from calendar_sync_helper.cryptography_utils import decrypt, encrypt
 from calendar_sync_helper.entities.entities_v1 import CalendarEventList, OutlookCalendarEvent, AbstractCalendarEvent, \
     ComputeActionsInput, GoogleCalendarEvent, ComputeActionsResponse
 from calendar_sync_helper.utils import is_syncblocker_event, separate_syncblocker_events, get_id_from_attendees, \
@@ -26,11 +28,15 @@ MAX_FILE_SIZE_LIMIT_BYTES = 5_000_000
 async def retrieve_calendar_file_proxy(
         x_file_location: Annotated[str | None, Header()] = None,
         x_auth_header_name: Annotated[str | None, Header()] = None,
-        x_auth_header_value: Annotated[str | None, Header()] = None
+        x_auth_header_value: Annotated[str | None, Header()] = None,
+        x_data_encryption_password: Annotated[str | None, Header()] = None
 ):
     """
     Retrieves the real entries of a calendar stored in a file that is protected by an "Authorization" header, thus
     cannot be retrieved by the "Send an HTTP request to SharePoint" action directly.
+
+    If x_data_encryption_password is set, the content at x_file_location is expected to be in binary form, and is
+    decrypted using the x_data_encryption_password.
     """
     if not x_file_location or not x_auth_header_name or not x_auth_header_value:
         raise HTTPException(status_code=400, detail="Missing required headers")
@@ -39,7 +45,6 @@ async def retrieve_calendar_file_proxy(
     if not validators.url(x_file_location) or not x_file_location.startswith("http"):
         raise HTTPException(status_code=400, detail="Invalid file location, must be a valid http(s) URL")
 
-    # Make HTTP request
     try:
         async with httpx.AsyncClient() as client:
             headers = {
@@ -57,11 +62,32 @@ async def retrieve_calendar_file_proxy(
                 # Validate that the response content is a valid JSON
                 try:
                     await response.aread()
-                    # Note: just calling response.json() may try to use an incorrect decoding,
-                    # e.g. utf-8 where another one must be used
-                    json_content = json.loads(response.text)
                 except Exception as e:
-                    raise HTTPException(status_code=400, detail=f"Failed to parse JSON content: {str(e)}")
+                    raise HTTPException(status_code=400, detail=f"Unable to read data stream from "
+                                                                f"file location: {e!r}")
+
+                if x_data_encryption_password:
+                    try:
+                        file_as_text = decrypt(response.content, password=x_data_encryption_password)
+                    except InvalidTag:
+                        raise HTTPException(status_code=400, detail="Unable to decrypt data, either wrong password "
+                                                                    "or data was manipulated")
+                    except Exception as e:
+                        raise HTTPException(status_code=400, detail=f"Unable to decrypt data, unexpected error "
+                                                                    f"occurred: {e!r}")
+                else:
+                    try:
+                        # Note: just calling response.json() may try to use an incorrect decoding,
+                        # e.g. utf-8 where another one must be used --> response.text takes care of the proper decoding
+                        file_as_text = response.text
+                    except Exception as e:
+                        raise HTTPException(status_code=400, detail=f"Unable to decode binary response data to "
+                                                                    f"text: {e!r}")
+
+                try:
+                    json_content = json.loads(file_as_text)
+                except Exception as e:
+                    raise HTTPException(status_code=400, detail=f"Failed to parse JSON content: {e!r}")
 
                 return json_content
     except Exception as e:
@@ -80,7 +106,8 @@ async def extract_events(
         x_file_location: Annotated[str | None, Header()] = None,
         x_upload_http_method: Annotated[str | None, Header()] = None,
         x_auth_header_name: Annotated[str | None, Header()] = None,
-        x_auth_header_value: Annotated[str | None, Header()] = None
+        x_auth_header_value: Annotated[str | None, Header()] = None,
+        x_data_encryption_password: Annotated[str | None, Header()] = None
 ):
     """
     Returns a list of the real(!) events, normalizing the data structure of the events from different calendar
@@ -97,6 +124,9 @@ async def extract_events(
 
     If x_file_location and x_upload_http_method are set, the returned response will also be uploaded to the provided
     location, using an (optional) header (x_auth_header_name, x_auth_header_value).
+
+    If x_file_location is set and an x_data_encryption_password value is provided, the data is symmetrically encrypted
+    with the x_data_encryption_password before uploading it to the x_file_location.
     """
     if not x_unique_sync_prefix:
         raise HTTPException(status_code=400, detail="You must provide the X-Unique-Sync-Prefix header")
@@ -144,8 +174,17 @@ async def extract_events(
                     headers[x_auth_header_name] = x_auth_header_value
 
                 events_as_json_dict = jsonable_encoder(events)
+
+                if x_data_encryption_password:
+                    encrypted_content = encrypt(plaintext=json.dumps(events_as_json_dict),
+                                                password=x_data_encryption_password)
+                    json_data = None
+                else:
+                    encrypted_content = None
+                    json_data = events_as_json_dict
+
                 response = await client.request(x_upload_http_method, url=x_file_location, headers=headers,
-                                                json=events_as_json_dict)
+                                                json=json_data, content=encrypted_content)
 
                 if response.status_code < 200 or response.status_code > 204:
                     raise HTTPException(status_code=400, detail=f"Failed to upload file, "

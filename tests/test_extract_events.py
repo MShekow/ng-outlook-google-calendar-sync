@@ -1,3 +1,4 @@
+import json
 from copy import copy
 
 import pytest
@@ -5,8 +6,9 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.testclient import TestClient
 from pytest_httpserver import HTTPServer
 
+from calendar_sync_helper.cryptography_utils import encrypt, decrypt
 from calendar_sync_helper.entities.entities_v1 import CalendarEventList, AbstractCalendarEvent
-from tests import parse_abstract_calendar_event_list
+from tests import parse_abstract_calendar_event_list, fix_file_location_for_localhost
 from tests.test_data import load_test_data
 from tests.test_retrieve_calendar_file_proxy import INVALID_FILE_LOCATIONS, UNREACHABLE_FILE_LOCATIONS
 
@@ -120,9 +122,9 @@ def test_success_simple_outlook_events_with_upload(test_client: TestClient, http
     test_events = load_test_data("simple-outlook-events")
 
     headers = copy(DEFAULT_HEADERS)
-    # Note: we do the replacement, because the sync service calls "validators.url()" which rejects "localhost" by
-    # default, see https://github.com/python-validators/validators/issues/392
-    headers["X-File-Location"] = httpserver.url_for("/file.txt").replace("localhost", "127.0.0.1.nip.io")
+
+    headers["X-File-Location"] = httpserver.url_for("/file.txt")
+    headers["X-File-Location"] = fix_file_location_for_localhost(headers["X-File-Location"])
     headers["X-Upload-Http-Method"] = "put"
 
     expected_events = [
@@ -161,6 +163,63 @@ def test_success_simple_outlook_events_with_upload(test_client: TestClient, http
     assert response.status_code == 200
     calendar_events = parse_abstract_calendar_event_list(response.json())
     assert calendar_events == expected_events
+
+
+def test_success_simple_outlook_events_with_encrypted_upload(test_client: TestClient, httpserver: HTTPServer):
+    """
+    Like test_success_simple_outlook_events_with_upload, but also sends the x_data_encryption_password header, expects
+    that the mock server is called with the expected events in encrypted form.
+    """
+    test_events = load_test_data("simple-outlook-events")
+    password = "foo"
+
+    headers = copy(DEFAULT_HEADERS)
+    headers["X-File-Location"] = httpserver.url_for("/file.txt")
+    headers["X-File-Location"] = fix_file_location_for_localhost(headers["X-File-Location"])
+    headers["X-Upload-Http-Method"] = "put"
+    headers["X-Data-Encryption-Password"] = password
+
+    expected_events = [
+        AbstractCalendarEvent(
+            sync_correlation_id="AAMkAGRiOTlhZjY3LTQzNWUtNGM0Ny05MGMwLWFmNDBlNzAxMDQ5OQBGAAAAAADBo9O3K16XQLoK7AG7_ka5BwARhE7LLMewTpXLsn71Fh8UAAAAAAENAAARhE7LLMewTpXLsn71Fh9UAAIRfOSpAAA=",
+            title="Fokuszeit",
+            description="body-Fokuszeit",
+            location="l",
+            start="2024-10-18T13:00:00Z",
+            end="2024-10-18T15:00:00Z",
+            is_all_day=False,
+            attendees=None,
+            show_as="busy",
+            sensitivity="normal"
+        ),
+        AbstractCalendarEvent(
+            sync_correlation_id="AAMkAGRiOTlhZjY3LTQzNWUtNGM0Ny05MGMwLWFmNDBlNzAxMZQ5OQBGAAAAAADBo9O3K16XQLoK7AG7_ka5BwARhE7LLMewTpXLsn71Fh9UAADAKPwgAAARhE7LLMewTpXLsn71Fh9UAAIb2raZAAA=",
+            title="Allday-Test",
+            description="body-allday",
+            location="",
+            start="2024-10-20T00:00:00Z",
+            end="2024-10-21T00:00:00Z",
+            is_all_day=True,
+            attendees=None,
+            show_as="free",
+            sensitivity="normal"
+        )
+    ]
+
+    httpserver.expect_request(
+        "/file.txt", method="PUT"
+    ).respond_with_data(status=200)
+
+    response = test_client.post(URL, headers=headers, json={"events": test_events})
+    assert response.status_code == 200
+    calendar_events = parse_abstract_calendar_event_list(response.json())
+    assert calendar_events == expected_events
+
+    # Verify that the encrypted uploaded data is valid, once we decrypt it
+    uploaded_encrypted_data: bytes = httpserver.log[0][0].data
+    uploaded_decrypted_data = decrypt(uploaded_encrypted_data, password)
+    expected_events_as_json = jsonable_encoder(expected_events)
+    assert uploaded_decrypted_data == json.dumps(expected_events_as_json)
 
 
 def test_success_simple_google_events(test_client: TestClient):

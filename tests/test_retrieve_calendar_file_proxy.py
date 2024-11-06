@@ -1,5 +1,9 @@
 import pytest
 from fastapi.testclient import TestClient
+from pytest_httpserver import HTTPServer
+
+from calendar_sync_helper.cryptography_utils import encrypt
+from tests import fix_file_location_for_localhost
 
 URL = "/retrieve-calendar-file-proxy"
 
@@ -66,7 +70,9 @@ def test_fail_invalid_content(test_client: TestClient):
     }
     response = test_client.get(URL, headers=headers)
     assert response.status_code == 400
-    assert response.json() == {"detail": "Failed to parse JSON content: Expecting value: line 1 column 1 (char 0)"}
+    assert response.json() == {
+        "detail": "Failed to parse JSON content: JSONDecodeError('Expecting value: line 1 column 1 (char 0)')"
+    }
 
 
 def test_fail_large_content(test_client: TestClient):
@@ -80,6 +86,70 @@ def test_fail_large_content(test_client: TestClient):
     assert response.json() == {"detail": "File size exceeds maximum size limit"}
 
 
+def test_fail_plaintext_data_with_encryption_key(test_client: TestClient, httpserver: HTTPServer):
+    headers = {
+        "X-File-Location": httpserver.url_for("/file.txt"),
+        "X-Auth-Header-Name": "Foo",
+        "X-Auth-Header-Value": "Bar",
+        "X-Data-Encryption-Password": "foo"
+    }
+    headers["X-File-Location"] = fix_file_location_for_localhost(headers["X-File-Location"])
+
+    httpserver.expect_request("/file.txt", method="GET").respond_with_data(response_data="[]", status=200)
+
+    response = test_client.get(URL, headers=headers)
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Unable to decrypt data, unexpected error occurred: "
+                                         "ValueError('initialization_vector must be between 8 and 128 bytes "
+                                         "(64 and 1024 bits).')"}
+
+
+def test_fail_tampered_encrypted_data(test_client: TestClient, httpserver: HTTPServer):
+    password = "foo"
+    headers = {
+        "X-File-Location": httpserver.url_for("/file.txt"),
+        "X-Auth-Header-Name": "Foo",
+        "X-Auth-Header-Value": "Bar",
+        "X-Data-Encryption-Password": password
+    }
+    headers["X-File-Location"] = fix_file_location_for_localhost(headers["X-File-Location"])
+
+    plaintext_data_to_return = "[]"
+    encrypted_plaintext_data = encrypt(plaintext=plaintext_data_to_return, password=password)
+    # tamper with the encrypted data
+    tampered_encrypted_plaintext_data = bytearray(encrypted_plaintext_data)
+    tampered_encrypted_plaintext_data[30] ^= 0x01  # Flip a bit
+    tampered_encrypted_plaintext_data = bytes(tampered_encrypted_plaintext_data)
+
+    httpserver.expect_request("/file.txt", method="GET").respond_with_data(
+        response_data=tampered_encrypted_plaintext_data, status=200)
+
+    response = test_client.get(URL, headers=headers)
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Unable to decrypt data, either wrong password or data was manipulated"}
+
+
+def test_fail_wrong_encryption_password(test_client: TestClient, httpserver: HTTPServer):
+    password = "foo"
+    headers = {
+        "X-File-Location": httpserver.url_for("/file.txt"),
+        "X-Auth-Header-Name": "Foo",
+        "X-Auth-Header-Value": "Bar",
+        "X-Data-Encryption-Password": password + "invalid suffix"
+    }
+    headers["X-File-Location"] = fix_file_location_for_localhost(headers["X-File-Location"])
+
+    plaintext_data_to_return = "[]"
+    encrypted_plaintext_data = encrypt(plaintext=plaintext_data_to_return, password=password)
+
+    httpserver.expect_request("/file.txt", method="GET").respond_with_data(
+        response_data=encrypted_plaintext_data, status=200)
+
+    response = test_client.get(URL, headers=headers)
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Unable to decrypt data, either wrong password or data was manipulated"}
+
+
 def test_success(test_client: TestClient):
     headers = {
         "X-File-Location": "https://services.gradle.org/versions/all",
@@ -88,3 +158,24 @@ def test_success(test_client: TestClient):
     }
     response = test_client.get(URL, headers=headers)
     assert response.status_code == 200
+
+
+def test_success_with_encryption_password(test_client: TestClient, httpserver: HTTPServer):
+    password = "foo"
+    headers = {
+        "X-File-Location": httpserver.url_for("/file.txt"),
+        "X-Auth-Header-Name": "Foo",
+        "X-Auth-Header-Value": "Bar",
+        "X-Data-Encryption-Password": password
+    }
+    headers["X-File-Location"] = fix_file_location_for_localhost(headers["X-File-Location"])
+
+    plaintext_data_to_return = "[]"
+    encrypted_plaintext_data = encrypt(plaintext=plaintext_data_to_return, password=password)
+
+    httpserver.expect_request("/file.txt", method="GET").respond_with_data(
+        response_data=encrypted_plaintext_data, status=200)
+
+    response = test_client.get(URL, headers=headers)
+    assert response.status_code == 200
+    assert response.text == plaintext_data_to_return
