@@ -1,4 +1,5 @@
 import json
+import uuid
 from copy import copy
 
 import pytest
@@ -6,11 +7,13 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.testclient import TestClient
 from pytest_httpserver import HTTPServer
 
-from calendar_sync_helper.cryptography_utils import encrypt, decrypt
+from calendar_sync_helper.cryptography_utils import decrypt
 from calendar_sync_helper.entities.entities_v1 import CalendarEventList, AbstractCalendarEvent
+from calendar_sync_helper.github_client import GitHubClient
 from tests import parse_abstract_calendar_event_list, fix_file_location_for_localhost
 from tests.test_data import load_test_data
-from tests.test_retrieve_calendar_file_proxy import INVALID_FILE_LOCATIONS, UNREACHABLE_FILE_LOCATIONS
+from tests.test_retrieve_calendar_file_proxy import INVALID_FILE_LOCATIONS, UNREACHABLE_FILE_LOCATIONS, \
+    INVALID_GITHUB_PAT, VALID_GITHUB_PAT, GITHUB_VALID_OWNER_REPO_BRANCH, URL as RETRIEVE_CALENDAR_FILE_PROXY_URL
 
 URL = "/extract-events"
 UNIQUE_SYNC_PREFIX_HEADER_NAME = "X-Unique-Sync-Prefix"
@@ -75,6 +78,31 @@ def test_fail_unreachable_file_location(test_client: TestClient, unreachable_fil
     assert response.status_code == 400
     error_msg = response.json()["detail"]
     assert error_msg.startswith("Failed to upload file:"), f"Unexpected string start: {error_msg}"
+
+
+@pytest.mark.parametrize("github_pat,url", [
+    (INVALID_GITHUB_PAT, f"https://github.com/{GITHUB_VALID_OWNER_REPO_BRANCH}/some-file"),
+    (VALID_GITHUB_PAT, f"https://github.com/"),
+    (VALID_GITHUB_PAT, f"https://github.com/owner"),
+    (VALID_GITHUB_PAT, f"https://github.com/owner/repo"),
+    (VALID_GITHUB_PAT, f"https://github.com/owner/repo/branch"),
+    (VALID_GITHUB_PAT, f"https://github.com/owner/repo/branch/"),
+])
+def test_fail_github_invalid_url_or_pat(test_client: TestClient, github_pat: str, url: str):
+    headers = copy(DEFAULT_HEADERS)
+    headers["X-File-Location"] = url
+    headers["X-Upload-Http-Method"] = "post"
+    headers["X-Auth-Header-Name"] = "PAT"
+    headers["X-Auth-Header-Value"] = github_pat
+
+    response = test_client.post(URL, headers=headers, json={"events": []})
+    assert response.status_code == 400
+    response_data = response.json()
+    if github_pat == INVALID_GITHUB_PAT:
+        assert response_data["detail"].startswith("Failed to upload file: invalid GitHub PAT or owner/repo was "
+                                                  "provided")
+    else:
+        assert response_data["detail"].startswith("Failed to upload file: URL does not match the expected pattern")
 
 
 def test_success_simple_outlook_events(test_client: TestClient):
@@ -163,6 +191,77 @@ def test_success_simple_outlook_events_with_upload(test_client: TestClient, http
     assert response.status_code == 200
     calendar_events = parse_abstract_calendar_event_list(response.json())
     assert calendar_events == expected_events
+
+
+@pytest.mark.parametrize("encryption", [True, False])
+def test_success_simple_outlook_events_with_upload_github(test_client: TestClient, encryption: bool):
+    """
+    Like test_success_simple_outlook_events_with_upload, but using GitHub, verifying that the file exists and deleting
+    it afterward.
+    """
+    test_events = load_test_data("simple-outlook-events")
+    password = "pw-test"
+
+    file_location = f"https://github.com/{GITHUB_VALID_OWNER_REPO_BRANCH}/files/automated-test-{uuid.uuid4()}"
+
+    headers = copy(DEFAULT_HEADERS)
+    headers["X-File-Location"] = file_location
+    headers["X-Upload-Http-Method"] = "put"
+    headers["X-Auth-Header-Name"] = "PAT"
+    headers["X-Auth-Header-Value"] = VALID_GITHUB_PAT
+    if encryption:
+        headers["X-Data-Encryption-Password"] = password
+
+    expected_events = [
+        AbstractCalendarEvent(
+            sync_correlation_id="AAMkAGRiOTlhZjY3LTQzNWUtNGM0Ny05MGMwLWFmNDBlNzAxMDQ5OQBGAAAAAADBo9O3K16XQLoK7AG7_ka5BwARhE7LLMewTpXLsn71Fh8UAAAAAAENAAARhE7LLMewTpXLsn71Fh9UAAIRfOSpAAA=",
+            title="Fokuszeit",
+            description="body-Fokuszeit",
+            location="l",
+            start="2024-10-18T13:00:00Z",
+            end="2024-10-18T15:00:00Z",
+            is_all_day=False,
+            attendees=None,
+            show_as="busy",
+            sensitivity="normal"
+        ),
+        AbstractCalendarEvent(
+            sync_correlation_id="AAMkAGRiOTlhZjY3LTQzNWUtNGM0Ny05MGMwLWFmNDBlNzAxMZQ5OQBGAAAAAADBo9O3K16XQLoK7AG7_ka5BwARhE7LLMewTpXLsn71Fh9UAADAKPwgAAARhE7LLMewTpXLsn71Fh9UAAIb2raZAAA=",
+            title="Allday-Test",
+            description="body-allday",
+            location="",
+            start="2024-10-20T00:00:00Z",
+            end="2024-10-21T00:00:00Z",
+            is_all_day=True,
+            attendees=None,
+            show_as="free",
+            sensitivity="normal"
+        )
+    ]
+
+    response = test_client.post(URL, headers=headers, json={"events": test_events})
+    assert response.status_code == 200
+    calendar_events = parse_abstract_calendar_event_list(response.json())
+    assert calendar_events == expected_events
+
+    # Ensure that the data can also be downloaded successfully
+    try:
+        headers = {
+            "X-File-Location": file_location,
+            "X-Auth-Header-Name": "PAT",
+            "X-Auth-Header-Value": VALID_GITHUB_PAT
+        }
+        if encryption:
+            headers["X-Data-Encryption-Password"] = password
+        response = test_client.get(RETRIEVE_CALENDAR_FILE_PROXY_URL, headers=headers)
+        assert response.status_code == 200
+        calendar_events = parse_abstract_calendar_event_list(response.json())
+        assert calendar_events == expected_events
+    finally:  # clean up the just-uploaded file again, even if the test failed
+        try:
+            GitHubClient(file_location, VALID_GITHUB_PAT).delete_file()
+        except:
+            pass
 
 
 def test_success_simple_outlook_events_with_encrypted_upload(test_client: TestClient, httpserver: HTTPServer):

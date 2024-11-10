@@ -1,11 +1,18 @@
+import json
 import re
 from datetime import UTC, datetime
-from typing import Optional
+from typing import Optional, Tuple
 
+import httpx
 from fastapi import HTTPException
+from fastapi.encoders import jsonable_encoder
+from github import GithubException
 
+from calendar_sync_helper.constants import MAX_FILE_SIZE_LIMIT_BYTES
+from calendar_sync_helper.cryptography_utils import encrypt
 from calendar_sync_helper.entities.entities_v1 import ImplSpecificEvent, GoogleCalendarEvent, AbstractCalendarEvent, \
     ComputeActionsInput
+from calendar_sync_helper.github_client import GitHubClient
 
 
 def _get_actual_utc_datetime() -> datetime:
@@ -172,3 +179,122 @@ def filter_outdated_events(input_data: ComputeActionsInput):
     input_data.cal1events = \
         [e for e in input_data.cal1events if AbstractCalendarEvent.from_implementation(e).start >= now]
     input_data.cal2events = [e for e in input_data.cal2events if e.start >= now]
+
+
+async def download_file_contents(x_file_location: str, x_auth_header_name: str,
+                                 x_auth_header_value: str) -> Tuple[bytes, Optional[str]]:
+    """
+    Downloads the data and returns it as raw bytes, with an optional hint of the encoding (e.g. "utf-8").
+    Raises HTTPException if something goes wrong.
+    """
+    try:
+        if x_file_location.startswith("https://github.com/"):
+            try:
+                github_client = GitHubClient(url=x_file_location, personal_access_token=x_auth_header_value)
+            except ValueError as e:  # GitHub URL is malformed
+                raise HTTPException(status_code=400, detail=f"Failed to retrieve file: {e}")
+
+            try:
+                github_client.check_data_and_pat_validity()
+            except GithubException as e:
+                raise HTTPException(status_code=400, detail=f"Failed to retrieve file: invalid GitHub PAT or owner/repo "
+                                                            f"was provided. Status {e.status} was returned, with "
+                                                            f"message '{e.message}'")
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Failed to retrieve file: unexpected error while checking "
+                                                            f"GitHub data and PAT: {e!r}")
+
+            try:
+                binary_data = github_client.download_file()  # the file at <path> could not exist
+            except GithubException as e:
+                raise HTTPException(status_code=400, detail=f"Failed to retrieve file: downloading file from GitHub "
+                                                            f"failed: {e.message or e.status}")
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Failed to retrieve file: unexpected error occurred while "
+                                                            f"downloading file from GitHub: {e!r}")
+
+            if not binary_data:
+                raise HTTPException(status_code=400, detail=f"Failed to retrieve file: downloading file from GitHub "
+                                                            f"failed, it does not exist")
+
+            return binary_data, None
+        else:
+            async with httpx.AsyncClient() as client:
+                headers = {
+                    x_auth_header_name: x_auth_header_value
+                }
+                async with client.stream("GET", x_file_location, headers=headers, follow_redirects=True) as response:
+                    if response.status_code != 200:
+                        raise HTTPException(status_code=400, detail=f"Failed to retrieve file, "
+                                                                    f"response status: {response.status_code}")
+
+                    content_length = response.headers.get("Content-Length")
+                    if content_length and int(content_length) > MAX_FILE_SIZE_LIMIT_BYTES:
+                        raise HTTPException(status_code=413, detail="File size exceeds maximum size limit")
+
+                    # Validate that the response content is a valid JSON
+                    try:
+                        await response.aread()
+                    except Exception as e:
+                        raise HTTPException(status_code=400, detail=f"Unable to read data stream from "
+                                                                    f"file location: {e!r}")
+
+                    return response.content, response.encoding
+    except Exception as e:
+        if type(e) == HTTPException:
+            raise e
+        raise HTTPException(status_code=400, detail=f"Failed to retrieve file: {e!r}")
+
+
+async def upload_file_contents(events: list[AbstractCalendarEvent], x_file_location: str, x_upload_http_method: str,
+                               x_auth_header_name: Optional[str], x_auth_header_value: Optional[str],
+                               x_data_encryption_password: Optional[str]):
+    try:
+        events_as_json_dict = jsonable_encoder(events)
+
+        if x_data_encryption_password:
+            content = encrypt(plaintext=json.dumps(events_as_json_dict),
+                              password=x_data_encryption_password)
+        else:
+            content = json.dumps(events_as_json_dict).encode("utf-8")
+
+        if x_file_location.startswith("https://github.com/"):
+            try:
+                github_client = GitHubClient(url=x_file_location, personal_access_token=x_auth_header_value)
+            except ValueError as e:  # GitHub URL is malformed
+                raise HTTPException(status_code=400, detail=f"Failed to upload file: {e}")
+
+            try:
+                github_client.check_data_and_pat_validity()
+            except GithubException as e:
+                raise HTTPException(status_code=400,
+                                    detail=f"Failed to upload file: invalid GitHub PAT or owner/repo "
+                                           f"was provided. Status {e.status} was returned, with "
+                                           f"message '{e.message}'")
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Failed to upload file: unexpected error while checking "
+                                                            f"GitHub data and PAT: {e!r}")
+
+            try:
+                github_client.upload_file(content)
+            except GithubException as e:
+                raise HTTPException(status_code=400, detail=f"Failed to upload file: {e.message}")
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Failed to upload file: unexpected error occurred while "
+                                                            f"uploading file to GitHub: {e!r}")
+        else:
+            async with httpx.AsyncClient() as client:
+                headers = dict()
+                if x_auth_header_name and x_auth_header_value:
+                    headers[x_auth_header_name] = x_auth_header_value
+
+                response = await client.request(x_upload_http_method, url=x_file_location, headers=headers,
+                                                content=content)
+
+                if response.status_code < 200 or response.status_code > 204:
+                    raise HTTPException(status_code=400, detail=f"Failed to upload file, "
+                                                                f"response status: {response.status_code}")
+    except Exception as e:
+        if type(e) == HTTPException:
+            raise e
+        raise HTTPException(status_code=400, detail=f"Failed to upload file: {e!r}")

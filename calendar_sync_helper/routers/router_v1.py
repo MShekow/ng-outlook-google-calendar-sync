@@ -2,22 +2,19 @@ import json
 from copy import copy
 from typing import Annotated
 
-import httpx
 import validators
 from cryptography.exceptions import InvalidTag
 from fastapi import Header, HTTPException, APIRouter
-from fastapi.encoders import jsonable_encoder
 
-from calendar_sync_helper.cryptography_utils import decrypt, encrypt
+from calendar_sync_helper.cryptography_utils import decrypt
 from calendar_sync_helper.entities.entities_v1 import CalendarEventList, OutlookCalendarEvent, AbstractCalendarEvent, \
     ComputeActionsInput, GoogleCalendarEvent, ComputeActionsResponse
 from calendar_sync_helper.utils import is_syncblocker_event, separate_syncblocker_events, get_id_from_attendees, \
     build_syncblocker_attendees, get_syncblocker_title, fix_outlook_specific_field_defaults, get_boolean_header_value, \
-    is_valid_sync_prefix, clean_id, filter_outdated_events, has_matching_title
+    is_valid_sync_prefix, clean_id, filter_outdated_events, has_matching_title, download_file_contents, \
+    upload_file_contents
 
 router = APIRouter()
-
-MAX_FILE_SIZE_LIMIT_BYTES = 5_000_000
 
 
 # Note: FastAPI behavior for headers that are set by the client, but contain no value (other than 0 or more spaces):
@@ -45,55 +42,29 @@ async def retrieve_calendar_file_proxy(
     if not validators.url(x_file_location) or not x_file_location.startswith("http"):
         raise HTTPException(status_code=400, detail="Invalid file location, must be a valid http(s) URL")
 
+    binary_data, encoding_hint = await download_file_contents(x_file_location, x_auth_header_name, x_auth_header_value)
+
+    if x_data_encryption_password:
+        try:
+            file_as_text = decrypt(binary_data, password=x_data_encryption_password)
+        except InvalidTag:
+            raise HTTPException(status_code=400, detail="Unable to decrypt data, either wrong password "
+                                                        "or data was manipulated")
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Unable to decrypt data, unexpected error "
+                                                        f"occurred: {e!r}")
+    else:
+        try:
+            file_as_text = binary_data.decode(encoding_hint or "utf-8")
+        except UnicodeDecodeError:
+            raise HTTPException(status_code=400, detail="Unable to decode binary response data to text")
+
     try:
-        async with httpx.AsyncClient() as client:
-            headers = {
-                x_auth_header_name: x_auth_header_value
-            }
-            async with client.stream("GET", x_file_location, headers=headers, follow_redirects=True) as response:
-                if response.status_code != 200:
-                    raise HTTPException(status_code=400, detail=f"Failed to retrieve file, "
-                                                                f"response status: {response.status_code}")
-
-                content_length = response.headers.get("Content-Length")
-                if content_length and int(content_length) > MAX_FILE_SIZE_LIMIT_BYTES:
-                    raise HTTPException(status_code=413, detail="File size exceeds maximum size limit")
-
-                # Validate that the response content is a valid JSON
-                try:
-                    await response.aread()
-                except Exception as e:
-                    raise HTTPException(status_code=400, detail=f"Unable to read data stream from "
-                                                                f"file location: {e!r}")
-
-                if x_data_encryption_password:
-                    try:
-                        file_as_text = decrypt(response.content, password=x_data_encryption_password)
-                    except InvalidTag:
-                        raise HTTPException(status_code=400, detail="Unable to decrypt data, either wrong password "
-                                                                    "or data was manipulated")
-                    except Exception as e:
-                        raise HTTPException(status_code=400, detail=f"Unable to decrypt data, unexpected error "
-                                                                    f"occurred: {e!r}")
-                else:
-                    try:
-                        # Note: just calling response.json() may try to use an incorrect decoding,
-                        # e.g. utf-8 where another one must be used --> response.text takes care of the proper decoding
-                        file_as_text = response.text
-                    except Exception as e:
-                        raise HTTPException(status_code=400, detail=f"Unable to decode binary response data to "
-                                                                    f"text: {e!r}")
-
-                try:
-                    json_content = json.loads(file_as_text)
-                except Exception as e:
-                    raise HTTPException(status_code=400, detail=f"Failed to parse JSON content: {e!r}")
-
-                return json_content
+        json_content = json.loads(file_as_text)
     except Exception as e:
-        if type(e) == HTTPException:
-            raise e
-        raise HTTPException(status_code=400, detail=f"Failed to retrieve file: {e!r}")
+        raise HTTPException(status_code=400, detail=f"Failed to parse JSON content: {e!r}")
+
+    return json_content
 
 
 @router.post("/extract-events")
@@ -167,32 +138,8 @@ async def extract_events(
         if not x_upload_http_method or x_upload_http_method.lower() not in ["put", "post"]:
             raise HTTPException(status_code=400, detail="Invalid upload method, must be PUT or POST")
 
-        try:
-            async with httpx.AsyncClient() as client:
-                headers = dict()
-                if x_auth_header_name and x_auth_header_value:
-                    headers[x_auth_header_name] = x_auth_header_value
-
-                events_as_json_dict = jsonable_encoder(events)
-
-                if x_data_encryption_password:
-                    encrypted_content = encrypt(plaintext=json.dumps(events_as_json_dict),
-                                                password=x_data_encryption_password)
-                    json_data = None
-                else:
-                    encrypted_content = None
-                    json_data = events_as_json_dict
-
-                response = await client.request(x_upload_http_method, url=x_file_location, headers=headers,
-                                                json=json_data, content=encrypted_content)
-
-                if response.status_code < 200 or response.status_code > 204:
-                    raise HTTPException(status_code=400, detail=f"Failed to upload file, "
-                                                                f"response status: {response.status_code}")
-        except Exception as e:
-            if type(e) == HTTPException:
-                raise e
-            raise HTTPException(status_code=400, detail=f"Failed to upload file: {e!r}")
+        await upload_file_contents(events, x_file_location, x_upload_http_method, x_auth_header_name,
+                                   x_auth_header_value, x_data_encryption_password)
 
     return events
 

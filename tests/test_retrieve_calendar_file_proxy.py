@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from fastapi.testclient import TestClient
 from pytest_httpserver import HTTPServer
@@ -20,6 +22,15 @@ UNREACHABLE_FILE_LOCATIONS = [
     "http://doesnotexistforsure.com",
     "https://www.google.com:1337"
 ]
+
+INVALID_GITHUB_PAT = "foo"
+VALID_GITHUB_PAT = os.environ.get("GITHUB_INTEGRATION_TEST_PAT")
+if not VALID_GITHUB_PAT:
+    raise ValueError("GitHub PAT for integration test is missing")
+
+GITHUB_VALID_OWNER_REPO_BRANCH = os.environ.get("GITHUB_INTEGRATION_TEST_OWNER_REPO_BRANCH")
+if not GITHUB_VALID_OWNER_REPO_BRANCH:
+    raise ValueError("GitHub owner/repo/branch value for integration test is missing")
 
 
 @pytest.mark.parametrize(
@@ -150,6 +161,77 @@ def test_fail_wrong_encryption_password(test_client: TestClient, httpserver: HTT
     assert response.json() == {"detail": "Unable to decrypt data, either wrong password or data was manipulated"}
 
 
+@pytest.mark.parametrize("github_pat,url", [
+    (INVALID_GITHUB_PAT, f"https://github.com/{GITHUB_VALID_OWNER_REPO_BRANCH}/some-file"),
+    (VALID_GITHUB_PAT, f"https://github.com/"),
+    (VALID_GITHUB_PAT, f"https://github.com/owner"),
+    (VALID_GITHUB_PAT, f"https://github.com/owner/repo"),
+    (VALID_GITHUB_PAT, f"https://github.com/owner/repo/branch"),
+    (VALID_GITHUB_PAT, f"https://github.com/owner/repo/branch/"),
+])
+def test_fail_github_invalid_url_or_pat(test_client: TestClient, github_pat: str, url: str):
+    headers = {
+        "X-File-Location": url,
+        "X-Auth-Header-Name": "PAT",
+        "X-Auth-Header-Value": github_pat,
+    }
+    response = test_client.get(URL, headers=headers)
+    assert response.status_code == 400
+    response_data = response.json()
+    if github_pat == INVALID_GITHUB_PAT:
+        assert response_data["detail"].startswith("Failed to retrieve file: invalid GitHub PAT or owner/repo was "
+                                                  "provided")
+    else:
+        assert response_data["detail"].startswith("Failed to retrieve file: URL does not match the expected pattern")
+
+
+def test_fail_github_nonexistent_file(test_client: TestClient):
+    headers = {
+        "X-File-Location": f"https://github.com/{GITHUB_VALID_OWNER_REPO_BRANCH}/does-not-exist.txt",
+        "X-Auth-Header-Name": "PAT",
+        "X-Auth-Header-Value": VALID_GITHUB_PAT,
+    }
+    response = test_client.get(URL, headers=headers)
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Failed to retrieve file: downloading file from GitHub failed, it "
+                                         "does not exist"}
+
+
+@pytest.mark.parametrize("file_path,password", [
+    ("files/plaintext-empty-events.json", "some-password"),
+    ("files/encrypted-with-foo-empty-events.bin", "")
+])
+def test_fail_github_encryption_plaintext_mismatch(test_client: TestClient, file_path: str, password: str):
+    headers = {
+        "X-File-Location": f"https://github.com/{GITHUB_VALID_OWNER_REPO_BRANCH}/{file_path}",
+        "X-Auth-Header-Name": "PAT",
+        "X-Auth-Header-Value": VALID_GITHUB_PAT,
+        "X-Data-Encryption-Password": password
+    }
+    response = test_client.get(URL, headers=headers)
+    assert response.status_code == 400
+    if password:
+        assert response.json() == {"detail": "Unable to decrypt data, unexpected error occurred: "
+                                             "ValueError('initialization_vector must be between 8 and 128 bytes "
+                                             "(64 and 1024 bits).')"}
+
+    else:
+        assert response.json() == {"detail": "Unable to decode binary response data to text"}
+
+
+def test_fail_github_large_content(test_client: TestClient):
+    headers = {
+        "X-File-Location": f"https://github.com/{GITHUB_VALID_OWNER_REPO_BRANCH}/files/10-mb-random-binary.bin",
+        "X-Auth-Header-Name": "PAT",
+        "X-Auth-Header-Value": VALID_GITHUB_PAT
+    }
+    response = test_client.get(URL, headers=headers)
+    assert response.status_code == 400
+    assert response.json() == {"detail": "Failed to retrieve file: unexpected error occurred while "
+                                         "downloading file from GitHub: ValueError('Content is too large "
+                                         "(10485760 bytes)')"}
+
+
 def test_success(test_client: TestClient):
     headers = {
         "X-File-Location": "https://services.gradle.org/versions/all",
@@ -179,3 +261,19 @@ def test_success_with_encryption_password(test_client: TestClient, httpserver: H
     response = test_client.get(URL, headers=headers)
     assert response.status_code == 200
     assert response.text == plaintext_data_to_return
+
+
+@pytest.mark.parametrize("file_path,password", [
+    ("files/plaintext-empty-events.json", ""),
+    ("files/encrypted-with-foo-empty-events.bin", "foo")
+])
+def test_success_github(test_client: TestClient, file_path: str, password: str):
+    headers = {
+        "X-File-Location": f"https://github.com/{GITHUB_VALID_OWNER_REPO_BRANCH}/{file_path}",
+        "X-Auth-Header-Name": "PAT",
+        "X-Auth-Header-Value": VALID_GITHUB_PAT,
+        "X-Data-Encryption-Password": password
+    }
+    response = test_client.get(URL, headers=headers)
+    assert response.status_code == 200
+    assert response.text == "[]"
