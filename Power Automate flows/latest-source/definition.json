@@ -1,10 +1,10 @@
 {
-  "name": "5d2849b2-1c2a-4739-b273-ab4b9e739664",
-  "id": "/providers/Microsoft.Flow/flows/5d2849b2-1c2a-4739-b273-ab4b9e739664",
+  "name": "04270f1d-1d9e-4862-b549-b1d6e894d67b",
+  "id": "/providers/Microsoft.Flow/flows/04270f1d-1d9e-4862-b549-b1d6e894d67b",
   "type": "Microsoft.Flow/flows",
   "properties": {
     "apiId": "/providers/Microsoft.PowerApps/apis/shared_logicflows",
-    "displayName": "NG Outlook Google calendar sync v0.1 - release",
+    "displayName": "NG Outlook Google calendar sync v0.2 - release",
     "definition": {
       "metadata": {
         "workflowEntityId": null,
@@ -20,8 +20,8 @@
         },
         "provisioningMethod": "FromDefinition",
         "failureAlertSubscription": true,
-        "clientLastModifiedTime": "2024-11-01T10:00:01.6938073Z",
-        "connectionKeySavedTimeKey": "2024-11-01T10:00:01.6938073Z"
+        "clientLastModifiedTime": "2024-11-10T15:50:51.703667Z",
+        "connectionKeySavedTimeKey": "2024-11-10T15:50:51.703667Z"
       },
       "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
       "contentVersion": "1.0.0.0",
@@ -70,7 +70,8 @@
                 "23"
               ],
               "minutes": [
-                0
+                0,
+                30
               ]
             }
           },
@@ -185,7 +186,7 @@
               {
                 "name": "nameCalendar2",
                 "type": "string",
-                "value": "something@gmail.com"
+                "value": "yourname@gmail.com"
               }
             ]
           },
@@ -359,7 +360,7 @@
         },
         "Setting:_Dry_Run": {
           "runAfter": {
-            "Setting:_calendar_2_download_authentication_header_value_(optional)": [
+            "Setting:_cal1_upload_or_cal2_download_encrypt_or_decrypt_password_(optional)": [
               "Succeeded"
             ]
           },
@@ -693,7 +694,8 @@
                     "X-File-Location": "@variables('cal1uploadLocation')",
                     "X-Upload-Http-Method": "@variables('uploadHttpMethod')",
                     "X-Auth-Header-Name": "@variables('cal1uploadAuthHeaderName')",
-                    "X-Auth-Header-Value": "@variables('cal1uploadAuthHeaderValue')"
+                    "X-Auth-Header-Value": "@variables('cal1uploadAuthHeaderValue')",
+                    "X-Data-Encryption-Password": "@variables('encryptionPassword')"
                   },
                   "parameters/body": "{\"events\": @{variables('cal1')}}"
                 },
@@ -816,7 +818,7 @@
               {
                 "name": "cal1uploadAuthHeaderValue",
                 "type": "string",
-                "value": "Basic 8wnsdf0u2fousd23sdfsdfsdf="
+                "value": "Basic 42sdf234fsdf"
               }
             ]
           },
@@ -972,7 +974,8 @@
                     "X-Unique-Sync-Prefix": "@variables('uniqueSyncPrefix')",
                     "X-Anonymize-Fields": "@{variables('hideDetails')}",
                     "X-Sync-Events-Without-Attendees": "@{variables('syncEventsWithoutAttendees')}",
-                    "X-Relevant-Response-Types": "@variables('eventResponseTypes')"
+                    "X-Relevant-Response-Types": "@variables('eventResponseTypes')",
+                    "X-Data-Encryption-Password": "@variables('encryptionPassword')"
                   },
                   "parameters/body": "{\"events\": @{body('Get_Outlook_calendar_view_of_events_cal2')?['value']}}"
                 },
@@ -1161,7 +1164,8 @@
                     "X-Unique-Sync-Prefix": "@variables('uniqueSyncPrefix')",
                     "X-Anonymize-Fields": "@{variables('hideDetails')}",
                     "X-Sync-Events-Without-Attendees": "@{variables('syncEventsWithoutAttendees')}",
-                    "X-Relevant-Response-Types": "@variables('eventResponseTypes')"
+                    "X-Relevant-Response-Types": "@variables('eventResponseTypes')",
+                    "X-Data-Encryption-Password": "@variables('encryptionPassword')"
                   },
                   "parameters/body": "{\"events\": @{body('Get_Google_calendar_view_of_events_cal2')?['items']}}"
                 },
@@ -1221,7 +1225,8 @@
                   "parameters/headers": {
                     "X-File-Location": "@variables('cal2provider')",
                     "X-Auth-Header-Name": "@variables('cal2downloadAuthHeaderName')",
-                    "X-Auth-Header-Value": "@variables('cal2downloadAuthHeaderValue')"
+                    "X-Auth-Header-Value": "@variables('cal2downloadAuthHeaderValue')",
+                    "X-Data-Encryption-Password": "@variables('encryptionPassword')"
                   }
                 },
                 "authentication": "@parameters('$authentication')"
@@ -1295,7 +1300,7 @@
               {
                 "name": "cal2downloadAuthHeaderValue",
                 "type": "string",
-                "value": "Basic 8wnsdf0u2fousd23sdfsdfsdf="
+                "value": "Basic 42sdf234fsdf"
               }
             ]
           },
@@ -1839,6 +1844,26 @@
             ]
           },
           "description": "Whether the \"compute actions\" algorithm should ignore differences in the event's description, when comparing two events. If you synchronize with Outlook, and you observe that each flow execution needlessly UPDATES many events, set this to true."
+        },
+        "Setting:_cal1_upload_or_cal2_download_encrypt_or_decrypt_password_(optional)": {
+          "runAfter": {
+            "Setting:_calendar_2_download_authentication_header_value_(optional)": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "7a5782f6-8ced-4f79-90a4-1a40e8ecafcf"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "encryptionPassword",
+                "type": "string"
+              }
+            ]
+          },
+          "description": "Sets the end-to-end encryption password to use, in case you configured the upload of your calendar 1 data (or set the calendar 2 provider to a HTTPS url). If left empty, the data is not encrypted."
         }
       },
       "description": "See https://github.com/MShekow/outlook-calendar-sync"

@@ -8,9 +8,9 @@ A Microsoft Power Automate flow to synchronize Outlook 365 calendars or Google c
 ## Instructions & download
 
 **Download** the most recent zip archive of the flow:
-- To synchronize **Outlook 365** with **Google**: [download](https://github.com/MShekow/ng-outlook-google-calendar-sync/raw/refs/heads/main/Power%20Automate%20flows/v0.1/NG-Outlook-Google-calendar-sync-v0.1.zip)
-- To synchronize **Outlook 365** with **Outlook 365**: [download](https://github.com/MShekow/ng-outlook-google-calendar-sync/raw/refs/heads/main/Power%20Automate%20flows/v0.1/NG-Outlook-calendar-sync-v0.1.zip)
-- To synchronize **Google** with **Google**: [download](https://github.com/MShekow/ng-outlook-google-calendar-sync/raw/refs/heads/main/Power%20Automate%20flows/v0.1/NG-Google-calendar-sync-v0.1.zip)
+- To synchronize **Outlook 365** with **Google**: [download](https://github.com/MShekow/ng-outlook-google-calendar-sync/raw/refs/heads/main/Power%20Automate%20flows/v0.2/NG-Outlook-Google-calendar-sync-v0.2.zip)
+- To synchronize **Outlook 365** with **Outlook 365**: [download](https://github.com/MShekow/ng-outlook-google-calendar-sync/raw/refs/heads/main/Power%20Automate%20flows/v0.2/NG-Outlook-calendar-sync-v0.2.zip)
+- To synchronize **Google** with **Google**: [download](https://github.com/MShekow/ng-outlook-google-calendar-sync/raw/refs/heads/main/Power%20Automate%20flows/v0.2/NG-Google-calendar-sync-v0.2.zip)
 
 If you want to clean / delete all blocker events:
 
@@ -21,11 +21,21 @@ Please see [this blog post](https://www.augmentedmind.de/2024/11/01/ng-calendar-
 
 ## Changelog of Power Automate Flow
 
+### v0.2 (2024-11-10)
+
+* New setting to configure End-to-end encryption of uploaded / downloaded mirror files (Power Automate action _"Setting: cal1 upload or cal2 download encrypt or decrypt password (optional)"_)
+* You can now use GitHub.com repositories as mirror file server
+
 ### v0.1 (2024-11-01)
 
 Initial release.
 
 ## Changelog of sync helper service
+
+### v0.2 (2024-11-10)
+
+* New feature: support for GitHub.com repositories for uploading and downloading mirror files. Files are created as regular commits to the repository
+* New feature: endpoints `/retrieve-calendar-file-proxy` and `/extract-events` now support the header `X-Data-Encryption-Password`, encrypting / decrypting data downloaded from (or uploaded to) the location specified in the `X-File-Location` header
 
 ### v0.1 (2024-11-01)
 

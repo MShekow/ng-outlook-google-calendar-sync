@@ -1,20 +1,20 @@
 {
   "schema": "1.0",
   "details": {
-    "displayName": "NG Outlook Google calendar sync v0.1",
+    "displayName": "NG Outlook Google calendar sync v0.2",
     "description": "See https://github.com/MShekow/ng-outlook-google-calendar-sync",
-    "createdTime": "2024-11-01T10:01:09.7874881Z",
-    "packageTelemetryId": "9f9629d6-595b-4e10-863b-7bff822570a1",
+    "createdTime": "2024-11-10T15:51:16.9913775Z",
+    "packageTelemetryId": "b061251a-75dd-4b43-943b-70d35a5820ae",
     "creator": "N/A",
     "sourceEnvironment": ""
   },
   "resources": {
-    "b849aa90-aaeb-4c4f-ae00-4721a9c42dca": {
+    "e035389e-6b7a-4112-9768-c1bd15e75b06": {
       "type": "Microsoft.Flow/flows",
       "suggestedCreationType": "New",
       "creationType": "Existing, New, Update",
       "details": {
-        "displayName": "NG Outlook Google calendar sync v0.1 - release"
+        "displayName": "NG Outlook Google calendar sync v0.2 - release"
       },
       "configurableBy": "User",
       "hierarchy": "Root",
