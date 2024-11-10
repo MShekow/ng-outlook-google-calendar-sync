@@ -30,4 +30,4 @@ jobs:
           pytest tests
         env:
           GITHUB_INTEGRATION_TEST_PAT: ${{ secrets.GH_INTEGRATION_TEST_PAT }}
-          GITHUB_VALID_OWNER_REPO_BRANCH: "MShekow/ng-outlook-google-calendar-sync/github-integration-test"
+          GITHUB_INTEGRATION_TEST_OWNER_REPO_BRANCH: "MShekow/ng-outlook-google-calendar-sync/github-integration-test"
