@@ -13,14 +13,14 @@ COPY . .
 
 # To be able to use all venv packages, we use /app/.venv/bin/python as entrypoint. But that file is a symlink to
 # /usr/local/bin/python (in the official python:... image). However, the ubuntu/python image we use at run-time does
-# have the Python binary at this path, but instead it resides at /usr/bin/python3. We therefore remove the symlink
+# not have the Python binary at this path, but instead it resides at /usr/bin/python3. We therefore remove the symlink
 # and create a new one to the correct Python path.
 # Note: we do this already here at the build stage because we don't have a shell or tools (like "ln") in the run-time
 # stage.
 RUN rm .venv/bin/python && ln -s /usr/bin/python3 .venv/bin/python
 
 # Use the Ubuntu chiseled minimal Docker image for Python. In contrast to Google's "distroless" Python image, which
-# offers no control over the Python version (other than "Python 3"), the Ubuntu image offers to at least control
+# offers no control over the Python version (other than "Python 3"), the Ubuntu image offers at least control of
 # the minor version of Python (e.g. "3.12"). I'm not aware of free(!) minimal images that offer patch-level control.
 FROM ubuntu/python:3.12-24.04 AS backend
 ENV PYTHONUNBUFFERED=1
