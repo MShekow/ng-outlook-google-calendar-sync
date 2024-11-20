@@ -31,3 +31,15 @@ jobs:
         env:
           GITHUB_INTEGRATION_TEST_PAT: ${{ secrets.GH_INTEGRATION_TEST_PAT }}
           GITHUB_INTEGRATION_TEST_OWNER_REPO_BRANCH: "MShekow/ng-outlook-google-calendar-sync/github-integration-test"
+  docker-smoke-test:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build Docker image and run smoke test
+        run: |
+          docker compose up -d
+          curl http://localhost:8000
+          docker compose down
