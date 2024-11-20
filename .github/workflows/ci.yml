@@ -23,7 +23,7 @@ jobs:
           python-version-file: 'pyproject.toml'
       - name: Run Tests
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements-poetry.txt
           python3 -m venv .venv
           source .venv/bin/activate
           poetry install --with test
