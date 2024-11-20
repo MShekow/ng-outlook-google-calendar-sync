@@ -11,7 +11,7 @@ from calendar_sync_helper.entities.entities_v1 import CalendarEventList, Outlook
     ComputeActionsInput, GoogleCalendarEvent, ComputeActionsResponse
 from calendar_sync_helper.utils import is_syncblocker_event, separate_syncblocker_events, get_id_from_attendees, \
     build_syncblocker_attendees, get_syncblocker_title, fix_outlook_specific_field_defaults, get_boolean_header_value, \
-    is_valid_sync_prefix, clean_id, filter_outdated_events, has_matching_title, download_file_contents, \
+    is_valid_sync_prefix, clean_id, filter_past_events, has_matching_title, download_file_contents, \
     upload_file_contents
 
 router = APIRouter()
@@ -151,6 +151,7 @@ async def compute_actions(
         x_syncblocker_title_prefix: Annotated[str | None, Header()] = None,
         x_anonymized_title_placeholder: Annotated[str | None, Header()] = None,
         x_ignore_description_equality_check: Annotated[str | None, Header()] = None,
+        x_disable_past_event_filter: Annotated[str | None, Header()] = None,
 ):
     """
     Figures out which cal1 SB events to delete, which ones to update, which ones to create, returning these actions as
@@ -173,12 +174,14 @@ async def compute_actions(
         syncblocker_title_prefix = x_syncblocker_title_prefix.lstrip('"').rstrip('"')
 
     ignore_description_equality_check = get_boolean_header_value(x_ignore_description_equality_check)
+    disable_past_event_filter = get_boolean_header_value(x_disable_past_event_filter)
 
     events_to_delete: list[AbstractCalendarEvent] = []
     events_to_update: list[AbstractCalendarEvent] = []
     events_to_create: list[AbstractCalendarEvent] = []
 
-    filter_outdated_events(input_data)
+    if not disable_past_event_filter:
+        filter_past_events(input_data)
 
     cal1_real, cal1_syncblocker = separate_syncblocker_events(input_data.cal1events, x_unique_sync_prefix)
     cleaned_cal2_ids = {clean_id(event.sync_correlation_id) for event in input_data.cal2events}

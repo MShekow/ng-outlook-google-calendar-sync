@@ -185,8 +185,10 @@ def test_success_create_syncblocker(test_client: TestClient, syncblocker_title_p
 
 
 @pytest.mark.parametrize("syncblocker_title_prefix", ["", "SyncBlocker: "])
+@pytest.mark.parametrize("disable_past_event_filter", [True, False])
 @pytest.mark.parametrize("mock_date", ["2024-09-09T07:00:00+00:00"], indirect=True)
-def test_success_no_action_all_equal(test_client: TestClient, syncblocker_title_prefix: str, mock_date):
+def test_success_no_action_all_equal(test_client: TestClient, syncblocker_title_prefix: str,
+                                     disable_past_event_filter: bool, mock_date):
     data = ComputeActionsInput(
         cal1events=[
             OutlookCalendarEvent(
@@ -203,13 +205,13 @@ def test_success_no_action_all_equal(test_client: TestClient, syncblocker_title_
                 sensitivity="normal"
             ),
             OutlookCalendarEvent(
-                id="old-syncblockerevent",  # should be ignored / filtered out by compute-actions endpoint
+                id="old-syncblockerevent",  # should be ignored / filtered out by compute-actions endpoint if disable_past_event_filter is False
                 subject=f"{syncblocker_title_prefix}Some older event",
                 body="b",
                 location="l",
                 startWithTimeZone="2024-08-09T07:00:00+00:00",  # event happened one month before the mock_date
                 endWithTimeZone="2024-08-09T08:00:00+00:00",
-                requiredAttendees=f"{DEFAULT_UNIQUE_SYNC_PREFIX}@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-040000008200e00174c5b7101a82e008000000000d82237bad16db0100000000000000001000000086f553e2d6f24149bc9b223050fb0bd9.invalid",
+                requiredAttendees=f"{DEFAULT_UNIQUE_SYNC_PREFIX}@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-140000008200e00174c5b7101a82e008000000000d82237bad16db0100000000000000001000000086f553e2d6f24149bc9b223050fb0bd9.invalid",
                 responseType="organizer",
                 isAllDay=False,
                 showAs="busy",
@@ -231,7 +233,7 @@ def test_success_no_action_all_equal(test_client: TestClient, syncblocker_title_
             ),
             AbstractCalendarEvent(
                 sync_correlation_id="140000008200E00174C5B7101A82E008000000000D82237BAD16DB0100000000000000001000000086F553E2D6F24149BC9B223050FB0BD9",
-                title="Some older event",  # should be ignored / filtered out by compute-actions endpoint
+                title="Some older event",  # should be ignored / filtered out by compute-actions endpoint if disable_past_event_filter is False
                 description="b",
                 location="l",
                 start="2024-08-09T07:00:00Z",
@@ -245,6 +247,8 @@ def test_success_no_action_all_equal(test_client: TestClient, syncblocker_title_
     )
     headers = copy(DEFAULT_HEADERS)
     headers["X-Syncblocker-Title-Prefix"] = syncblocker_title_prefix
+    if disable_past_event_filter:
+        headers["X-Disable-Past-Event-Filter"] = "true"
     response = test_client.post(URL, json=jsonable_encoder(data), headers=headers)
     response_data = ComputeActionsResponse(**response.json())
     assert response_data == ComputeActionsResponse(
@@ -313,7 +317,8 @@ def test_success_no_action_all_equal_anonymized_data(test_client: TestClient, ca
 
 @pytest.mark.parametrize("set_ignore_header", [False, True])
 @pytest.mark.parametrize("mock_date", ["2024-09-09T07:00:00+00:00"], indirect=True)
-def test_success_no_action_all_equal_ignore_description_equality(test_client: TestClient, set_ignore_header: bool, mock_date):
+def test_success_no_action_all_equal_ignore_description_equality(test_client: TestClient, set_ignore_header: bool,
+                                                                 mock_date):
     data = ComputeActionsInput(
         cal1events=[
             OutlookCalendarEvent(

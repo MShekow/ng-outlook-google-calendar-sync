@@ -32,6 +32,10 @@ Initial release.
 
 ## Changelog of sync helper service
 
+### v0.2.1 (2024-11-20)
+
+* New feature: endpoint `/compute-actions` supports a new _optional_ header `X-Disable-Past-Event-Filter` which can be set to "true". In this case, the algorithm considers _all_ submitted events, disabling the default behavior where it only considers cal 1 / 2 events for which `event.start >= <now>` holds
+
 ### v0.2 (2024-11-10)
 
 * New feature: support for GitHub.com repositories for uploading and downloading mirror files. Files are created as regular commits to the repository

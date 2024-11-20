@@ -173,7 +173,7 @@ def clean_id(unclean_id: str) -> str:
     return cleaned_id.lower()
 
 
-def filter_outdated_events(input_data: ComputeActionsInput):
+def filter_past_events(input_data: ComputeActionsInput):
     now = get_current_utc_date()
 
     input_data.cal1events = \
