@@ -41,5 +41,6 @@ jobs:
       - name: Build Docker image and run smoke test
         run: |
           docker compose up -d
+          sleep 5
           curl http://localhost:8000
           docker compose down
