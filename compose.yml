@@ -1,0 +1,10 @@
+services:
+  sync-helper:
+    build:
+      context: .
+    image: sync-helper-service:local
+    container_name: sync-helper-service
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    pull_policy: build

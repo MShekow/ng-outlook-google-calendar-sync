@@ -41,13 +41,22 @@ Initial release.
 
 Initial release.
 
+## Running the _Sync helper service_
+
+If you want to **self-host** the sync helper service, _Docker_ is recommended. There is a _Docker compose_ stack available.
+
+To build the image and run the service, type `docker compose up -d`
+To stop and clean up the service, type `docker compose down`
+
+If you want SSL termination (e.g. using the free SSL certificates provided by Let's Encrypt), you need to put a reverse proxy (HTTP) server in front of the sync helper service. The reverse proxy then does the SSL termination. See e.g. [here](https://doc.traefik.io/traefik/user-guides/docker-compose/acme-tls/) for how to achieve this with Traefik, or [here](https://github.com/nginx-proxy/acme-companion) for how to use Nginx.
+
 ## Developing the _Sync helper service_
 
 ### Package management
 
 The Python-based sync helper service uses [Poetry](https://python-poetry.org/) for package management. To avoid conflicts between the dependencies of Poetry and the dependencies of this project, you should either install Poetry by other means (e.g. with Brew), or use separate (virtual) environments, e.g. as follows (for UNIX):
 - `python3 -m venv .poetry` to create Poetry's virtual env
-- `./.poetry/bin/pip install -r requirements.txt` to install Poetry into that venv
+- `./.poetry/bin/pip install -r requirements-poetry.txt` to install Poetry into that venv
 - `python3 -m venv .venv` to create the project's venv
 - `source .venv/bin/activate` to activate the project's venv
 - `./.poetry/bin/poetry install --with test` (optional additional argument: `--sync`) to install/reinstall the dependencies with Poetry

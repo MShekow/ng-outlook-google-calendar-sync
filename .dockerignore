@@ -1,0 +1,8 @@
+.*
+**__pycache__*
+Power Automate flows
+Dockerfile
+compose.yml
+render.yaml
+LICENSE
+*.md
