@@ -23,6 +23,15 @@ RUN rm .venv/bin/python && ln -s /usr/bin/python3 .venv/bin/python
 # offers no control over the Python version (other than "Python 3"), the Ubuntu image offers at least control of
 # the minor version of Python (e.g. "3.12"). I'm not aware of free(!) minimal images that offer patch-level control.
 FROM ubuntu/python:3.12-24.04 AS backend
+# Remove the Pebble manager which we don't need and which may contain vulnerabilities found by scanners
+# (which is annoying, even if the findings are false positives). To be able to delete them, we need a shell and root
+# temporarily ...
+COPY --from=busybox:uclibc /bin/sh /bin/sh
+COPY --from=busybox:uclibc /bin/rm /bin/rm
+USER 0
+RUN rm /usr/bin/pebble
+RUN rm /bin/sh
+USER _daemon_
 ENV PYTHONUNBUFFERED=1
 ENV TZ="UTC"
 WORKDIR /app
