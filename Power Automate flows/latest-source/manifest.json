@@ -1,28 +1,26 @@
 {
   "schema": "1.0",
   "details": {
-    "displayName": "NG Outlook Google calendar sync v0.2",
+    "displayName": "NG Outlook Google calendar sync v0.3",
     "description": "See https://github.com/MShekow/ng-outlook-google-calendar-sync",
-    "createdTime": "2024-11-10T15:51:16.9913775Z",
-    "packageTelemetryId": "b061251a-75dd-4b43-943b-70d35a5820ae",
+    "createdTime": "2024-12-07T15:33:32.5920564Z",
+    "packageTelemetryId": "74709cf2-abaf-41a1-941f-af9b9efe0268",
     "creator": "N/A",
     "sourceEnvironment": ""
   },
   "resources": {
-    "e035389e-6b7a-4112-9768-c1bd15e75b06": {
+    "d4b58bc5-4f11-439a-9bc3-93721a70964e": {
       "type": "Microsoft.Flow/flows",
       "suggestedCreationType": "New",
       "creationType": "Existing, New, Update",
       "details": {
-        "displayName": "NG Outlook Google calendar sync v0.2 - release"
+        "displayName": "NG Outlook Google calendar sync v0.3 - release"
       },
       "configurableBy": "User",
       "hierarchy": "Root",
       "dependsOn": [
         "f9042889-18dc-4a3f-827e-05769b86aa92",
         "a079a46a-4a2a-4579-ad5e-f70cde7e76e7",
-        "0a3a9201-2eda-4269-a20b-5a9d5309f2f2",
-        "99aafcc4-1814-4865-8b78-1df00bc071b4",
         "b0ad8f79-0258-4c28-8219-8e7ed3d0cd66",
         "bfc4ed2f-ea28-466e-b73e-74f6265d91ea",
         "972a9ec2-0d78-496f-856b-b82191b2481a",
@@ -36,7 +34,7 @@
       "suggestedCreationType": "Existing",
       "details": {
         "displayName": "Office 365 Outlook",
-        "iconUri": "https://connectoricons-prod.azureedge.net/releases/v1.0.1716/1.0.1716.3922/office365/icon.png"
+        "iconUri": "https://connectoricons-prod.azureedge.net/releases/v1.0.1722/1.0.1722.3975/office365/icon.png"
       },
       "configurableBy": "System",
       "hierarchy": "Child",
@@ -54,33 +52,6 @@
       "hierarchy": "Child",
       "dependsOn": [
         "f9042889-18dc-4a3f-827e-05769b86aa92"
-      ]
-    },
-    "0a3a9201-2eda-4269-a20b-5a9d5309f2f2": {
-      "id": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
-      "name": "shared_sharepointonline",
-      "type": "Microsoft.PowerApps/apis",
-      "suggestedCreationType": "Existing",
-      "details": {
-        "displayName": "SharePoint",
-        "iconUri": "https://connectoricons-prod.azureedge.net/u/jayawan/releases/v1.0.1697/1.0.1697.3786/sharepointonline/icon.png"
-      },
-      "configurableBy": "System",
-      "hierarchy": "Child",
-      "dependsOn": []
-    },
-    "99aafcc4-1814-4865-8b78-1df00bc071b4": {
-      "type": "Microsoft.PowerApps/apis/connections",
-      "suggestedCreationType": "Existing",
-      "creationType": "Existing",
-      "details": {
-        "displayName": "your-sharepoint@connection.com",
-        "iconUri": "https://connectoricons-prod.azureedge.net/u/alexsp/sporelease/1.0.1682.3673/sharepointonline/icon.png"
-      },
-      "configurableBy": "User",
-      "hierarchy": "Child",
-      "dependsOn": [
-        "0a3a9201-2eda-4269-a20b-5a9d5309f2f2"
       ]
     },
     "b0ad8f79-0258-4c28-8219-8e7ed3d0cd66": {
