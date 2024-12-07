@@ -1,18 +1,18 @@
 {
-  "name": "04270f1d-1d9e-4862-b549-b1d6e894d67b",
-  "id": "/providers/Microsoft.Flow/flows/04270f1d-1d9e-4862-b549-b1d6e894d67b",
+  "name": "62012d66-2678-45e8-bba6-0ddfea86f860",
+  "id": "/providers/Microsoft.Flow/flows/62012d66-2678-45e8-bba6-0ddfea86f860",
   "type": "Microsoft.Flow/flows",
   "properties": {
     "apiId": "/providers/Microsoft.PowerApps/apis/shared_logicflows",
-    "displayName": "NG Outlook Google calendar sync v0.2 - release",
+    "displayName": "NG Outlook Google calendar sync v0.3 - release",
     "definition": {
       "metadata": {
         "workflowEntityId": null,
         "processAdvisorMetadata": null,
         "flowChargedByPaygo": null,
-        "flowclientsuspensionreason": "None",
-        "flowclientsuspensiontime": null,
+        "flowclientsuspensionreason": "BillingConsumption",
         "flowclientsuspensionreasondetails": null,
+        "flowclientsuspensiontime": "2024-12-07T15:29:04.9045784Z",
         "creator": {
           "id": "6a3f8d4b-482b-4acb-9128-c4748e9b93a1",
           "type": "User",
@@ -20,8 +20,8 @@
         },
         "provisioningMethod": "FromDefinition",
         "failureAlertSubscription": true,
-        "clientLastModifiedTime": "2024-11-10T15:50:51.703667Z",
-        "connectionKeySavedTimeKey": "2024-11-10T15:50:51.703667Z"
+        "clientLastModifiedTime": "2024-12-07T15:29:04.9045784Z",
+        "connectionKeySavedTimeKey": "2024-12-07T15:29:04.9045784Z"
       },
       "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
       "contentVersion": "1.0.0.0",
@@ -675,8 +675,24 @@
               "metadata": {
                 "operationMetadataId": "f4030334-b97a-498e-80f4-7d5929986531"
               },
-              "type": "OpenApiConnection",
+              "type": "Http",
               "inputs": {
+                "method": "POST",
+                "uri": "@{variables('syncHelperServerUrl')}/extract-events",
+                "headers": {
+                  "X-Unique-Sync-Prefix": "@variables('uniqueSyncPrefix')",
+                  "X-Anonymize-Fields": "@{variables('anonymizeFieldsInUpload')}",
+                  "X-Sync-Events-Without-Attendees": "@{variables('syncEventsWithoutAttendees')}",
+                  "X-Relevant-Response-Types": "@variables('eventResponseTypes')",
+                  "X-File-Location": "@variables('cal1uploadLocation')",
+                  "X-Upload-Http-Method": "@variables('uploadHttpMethod')",
+                  "X-Auth-Header-Name": "@variables('cal1uploadAuthHeaderName')",
+                  "X-Auth-Header-Value": "@variables('cal1uploadAuthHeaderValue')",
+                  "X-Data-Encryption-Password": "@variables('encryptionPassword')"
+                },
+                "body": {
+                  "events": "@variables('cal1')"
+                },
                 "host": {
                   "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
                   "connectionName": "shared_sharepointonline",
@@ -698,8 +714,7 @@
                     "X-Data-Encryption-Password": "@variables('encryptionPassword')"
                   },
                   "parameters/body": "{\"events\": @{variables('cal1')}}"
-                },
-                "authentication": "@parameters('$authentication')"
+                }
               }
             }
           },
@@ -950,6 +965,21 @@
               },
               "type": "If"
             },
+            "Store_Outlook_cal2_events_in_cal2": {
+              "runAfter": {
+                "Get_Outlook_cal2_events_from_sync_helper_server": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "9bde464e-22d9-42e3-8a85-2e2340f477a0"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "cal2",
+                "value": "@body('Get_Outlook_cal2_events_from_sync_helper_server')"
+              }
+            },
             "Get_Outlook_cal2_events_from_sync_helper_server": {
               "runAfter": {
                 "Check_event_count_Outlook_calendar_2": [
@@ -959,8 +989,20 @@
               "metadata": {
                 "operationMetadataId": "5007e776-2eb0-40e3-8471-bda9686fe0a8"
               },
-              "type": "OpenApiConnection",
+              "type": "Http",
               "inputs": {
+                "method": "POST",
+                "uri": "@{variables('syncHelperServerUrl')}/extract-events",
+                "headers": {
+                  "X-Unique-Sync-Prefix": "@variables('uniqueSyncPrefix')",
+                  "X-Anonymize-Fields": "@{variables('hideDetails')}",
+                  "X-Sync-Events-Without-Attendees": "@{variables('syncEventsWithoutAttendees')}",
+                  "X-Relevant-Response-Types": "@variables('eventResponseTypes')",
+                  "X-Data-Encryption-Password": "@variables('encryptionPassword')"
+                },
+                "body": {
+                  "events": "@body('Get_Outlook_calendar_view_of_events_cal2')?['value']"
+                },
                 "host": {
                   "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
                   "connectionName": "shared_sharepointonline",
@@ -978,23 +1020,7 @@
                     "X-Data-Encryption-Password": "@variables('encryptionPassword')"
                   },
                   "parameters/body": "{\"events\": @{body('Get_Outlook_calendar_view_of_events_cal2')?['value']}}"
-                },
-                "authentication": "@parameters('$authentication')"
-              }
-            },
-            "Store_Outlook_cal2_events_in_cal2": {
-              "runAfter": {
-                "Get_Outlook_cal2_events_from_sync_helper_server": [
-                  "Succeeded"
-                ]
-              },
-              "metadata": {
-                "operationMetadataId": "9bde464e-22d9-42e3-8a85-2e2340f477a0"
-              },
-              "type": "SetVariable",
-              "inputs": {
-                "name": "cal2",
-                "value": "@body('Get_Outlook_cal2_events_from_sync_helper_server')"
+                }
               }
             }
           },
@@ -1140,6 +1166,21 @@
               },
               "type": "If"
             },
+            "Store_Google_cal2_events_in_cal2": {
+              "runAfter": {
+                "Get_Google_cal2_events_from_sync_helper_server": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "a3a67dda-adf6-47c8-ab5b-525282673c41"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "cal2",
+                "value": "@body('Get_Google_cal2_events_from_sync_helper_server')"
+              }
+            },
             "Get_Google_cal2_events_from_sync_helper_server": {
               "runAfter": {
                 "Check_event_count_Google_calendar_2": [
@@ -1149,8 +1190,20 @@
               "metadata": {
                 "operationMetadataId": "a61aff2b-ba06-413f-a5fe-898aa13cd1a6"
               },
-              "type": "OpenApiConnection",
+              "type": "Http",
               "inputs": {
+                "method": "POST",
+                "uri": "@{variables('syncHelperServerUrl')}/extract-events",
+                "headers": {
+                  "X-Unique-Sync-Prefix": "@variables('uniqueSyncPrefix')",
+                  "X-Anonymize-Fields": "@{variables('hideDetails')}",
+                  "X-Sync-Events-Without-Attendees": "@{variables('syncEventsWithoutAttendees')}",
+                  "X-Relevant-Response-Types": "@variables('eventResponseTypes')",
+                  "X-Data-Encryption-Password": "@variables('encryptionPassword')"
+                },
+                "body": {
+                  "events": "@body('Get_Google_calendar_view_of_events_cal2')?['items']"
+                },
                 "host": {
                   "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
                   "connectionName": "shared_sharepointonline",
@@ -1168,23 +1221,7 @@
                     "X-Data-Encryption-Password": "@variables('encryptionPassword')"
                   },
                   "parameters/body": "{\"events\": @{body('Get_Google_calendar_view_of_events_cal2')?['items']}}"
-                },
-                "authentication": "@parameters('$authentication')"
-              }
-            },
-            "Store_Google_cal2_events_in_cal2": {
-              "runAfter": {
-                "Get_Google_cal2_events_from_sync_helper_server": [
-                  "Succeeded"
-                ]
-              },
-              "metadata": {
-                "operationMetadataId": "a3a67dda-adf6-47c8-ab5b-525282673c41"
-              },
-              "type": "SetVariable",
-              "inputs": {
-                "name": "cal2",
-                "value": "@body('Get_Google_cal2_events_from_sync_helper_server')"
+                }
               }
             }
           },
@@ -1206,13 +1243,36 @@
         },
         "Get_cal2_data_(file_or_URL)": {
           "actions": {
+            "Store_file-based_cal2_events_in_cal2": {
+              "runAfter": {
+                "Download_calendar_2_file": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "c0352e29-4db9-4da8-9d5b-8e440075bc48"
+              },
+              "type": "SetVariable",
+              "inputs": {
+                "name": "cal2",
+                "value": "@body('Download_calendar_2_file')"
+              }
+            },
             "Download_calendar_2_file": {
               "runAfter": {},
               "metadata": {
                 "operationMetadataId": "66a2c23e-6ebb-4eaa-9d95-3d7e5cfc87f7"
               },
-              "type": "OpenApiConnection",
+              "type": "Http",
               "inputs": {
+                "method": "GET",
+                "uri": "@{variables('syncHelperServerUrl')}/retrieve-calendar-file-proxy",
+                "headers": {
+                  "X-File-Location": "@variables('cal2provider')",
+                  "X-Auth-Header-Name": "@variables('cal2downloadAuthHeaderName')",
+                  "X-Auth-Header-Value": "@variables('cal2downloadAuthHeaderValue')",
+                  "X-Data-Encryption-Password": "@variables('encryptionPassword')"
+                },
                 "host": {
                   "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
                   "connectionName": "shared_sharepointonline",
@@ -1228,23 +1288,7 @@
                     "X-Auth-Header-Value": "@variables('cal2downloadAuthHeaderValue')",
                     "X-Data-Encryption-Password": "@variables('encryptionPassword')"
                   }
-                },
-                "authentication": "@parameters('$authentication')"
-              }
-            },
-            "Store_file-based_cal2_events_in_cal2": {
-              "runAfter": {
-                "Download_calendar_2_file": [
-                  "Succeeded"
-                ]
-              },
-              "metadata": {
-                "operationMetadataId": "c0352e29-4db9-4da8-9d5b-8e440075bc48"
-              },
-              "type": "SetVariable",
-              "inputs": {
-                "name": "cal2",
-                "value": "@body('Download_calendar_2_file')"
+                }
               }
             }
           },
@@ -1305,37 +1349,6 @@
             ]
           },
           "description": "In case you set the calendar 2 provider to a https URL, provide the value of the authentication header. E.g. \"Basic f23fsdh24=\" or \"Bearer fsdf45sfsdf\"."
-        },
-        "Compute_calendar_modification_actions": {
-          "runAfter": {
-            "Get_cal2_data_(file_or_URL)": [
-              "Succeeded"
-            ]
-          },
-          "metadata": {
-            "operationMetadataId": "955db350-1f27-4dee-9375-11609139ee5d"
-          },
-          "type": "OpenApiConnection",
-          "inputs": {
-            "host": {
-              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
-              "connectionName": "shared_sharepointonline",
-              "operationId": "HttpRequest"
-            },
-            "parameters": {
-              "dataset": "@variables('syncHelperServerUrl')",
-              "parameters/method": "POST",
-              "parameters/uri": "/compute-actions",
-              "parameters/headers": {
-                "X-Unique-Sync-Prefix": "@variables('uniqueSyncPrefix')",
-                "X-SyncBlocker-Title-Prefix": "@variables('syncBlockerTitlePrefix')",
-                "X-Anonymized-Title-Placeholder": "@variables('anonymizedSbTitle')",
-                "X-Ignore-Description-Equality-Check": "@{variables('ignoreDescriptionComparison')}"
-              },
-              "parameters/body": "{\"cal1events\": @{variables('cal1')}, \"cal2events\": @{variables('cal2')}}"
-            },
-            "authentication": "@parameters('$authentication')"
-          }
         },
         "Setting:_anonymized_SyncBlocker_event_title_(optional)": {
           "runAfter": {
@@ -1864,6 +1877,31 @@
             ]
           },
           "description": "Sets the end-to-end encryption password to use, in case you configured the upload of your calendar 1 data (or set the calendar 2 provider to a HTTPS url). If left empty, the data is not encrypted."
+        },
+        "Compute_calendar_modification_actions": {
+          "runAfter": {
+            "Get_cal2_data_(file_or_URL)": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "3027b8a3-4cd1-471f-86da-5e8a05fee5ab"
+          },
+          "type": "Http",
+          "inputs": {
+            "method": "POST",
+            "uri": "@{variables('syncHelperServerUrl')}/compute-actions",
+            "headers": {
+              "X-Unique-Sync-Prefix": "@variables('uniqueSyncPrefix')",
+              "X-SyncBlocker-Title-Prefix": "@variables('syncBlockerTitlePrefix')",
+              "X-Anonymized-Title-Placeholder": "@variables('anonymizedSbTitle')",
+              "X-Ignore-Description-Equality-Check": "@{variables('ignoreDescriptionComparison')}"
+            },
+            "body": {
+              "cal1events": "@variables('cal1')",
+              "cal2events": "@variables('cal2')"
+            }
+          }
         }
       },
       "description": "See https://github.com/MShekow/outlook-calendar-sync"
@@ -1873,12 +1911,6 @@
         "connectionName": "shared-office365-60785805-c0f6-42e7-953f-862bc362d824",
         "source": "Embedded",
         "id": "/providers/Microsoft.PowerApps/apis/shared_office365",
-        "tier": "NotSpecified"
-      },
-      "shared_sharepointonline": {
-        "connectionName": "shared-sharepointonl-fb4e9012-0832-4171-8379-d40d087147c7",
-        "source": "Embedded",
-        "id": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
         "tier": "NotSpecified"
       },
       "shared_office365_1": {

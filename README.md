@@ -8,9 +8,9 @@ A Microsoft Power Automate flow to synchronize Outlook 365 calendars or Google c
 ## Instructions & download
 
 **Download** the most recent zip archive of the flow:
-- To synchronize **Outlook 365** with **Google**: [download](https://github.com/MShekow/ng-outlook-google-calendar-sync/raw/refs/heads/main/Power%20Automate%20flows/v0.2/NG-Outlook-Google-calendar-sync-v0.2.zip)
-- To synchronize **Outlook 365** with **Outlook 365**: [download](https://github.com/MShekow/ng-outlook-google-calendar-sync/raw/refs/heads/main/Power%20Automate%20flows/v0.2/NG-Outlook-calendar-sync-v0.2.zip)
-- To synchronize **Google** with **Google**: [download](https://github.com/MShekow/ng-outlook-google-calendar-sync/raw/refs/heads/main/Power%20Automate%20flows/v0.2/NG-Google-calendar-sync-v0.2.zip)
+- To synchronize **Outlook 365** with **Google**: [download](https://github.com/MShekow/ng-outlook-google-calendar-sync/raw/refs/heads/main/Power%20Automate%20flows/v0.3/NG-Outlook-Google-calendar-sync-v0.3.zip)
+- To synchronize **Outlook 365** with **Outlook 365**: [download](https://github.com/MShekow/ng-outlook-google-calendar-sync/raw/refs/heads/main/Power%20Automate%20flows/v0.3/NG-Outlook-calendar-sync-v0.3.zip)
+- To synchronize **Google** with **Google**: [download](https://github.com/MShekow/ng-outlook-google-calendar-sync/raw/refs/heads/main/Power%20Automate%20flows/v0.3/NG-Google-calendar-sync-v0.3.zip)
 
 If you want to clean / delete all blocker events:
 
@@ -21,12 +21,17 @@ Please see [this blog post](https://www.augmentedmind.de/2024/11/01/ng-calendar-
 
 ## Changelog of Power Automate Flow
 
-### v0.2 (2024-11-10)
+### v0.3 (2024-12-14)
+
+* The _SharePoint_-based **HTTP** action (which was used by default because it was _free_) was replaced with the _Premium_ `Http` action. Reason: the SharePoint HTTP action no longer supports URLs that point to _non_-SharePoint servers
+* Note: the v0.3 Power Automate flow is fully compatible with the v0.2.1 _sync helper service_! No corresponding v0.3 release is necessary for the _sync helper service_.
+
+### v0.3 (2024-11-10) - **no longer works!**
 
 * New setting to configure End-to-end encryption of uploaded / downloaded mirror files (Power Automate action _"Setting: cal1 upload or cal2 download encrypt or decrypt password (optional)"_)
 * You can now use GitHub.com repositories as mirror file server
 
-### v0.1 (2024-11-01)
+### v0.1 (2024-11-01) - **no longer works!**
 
 Initial release.
 
