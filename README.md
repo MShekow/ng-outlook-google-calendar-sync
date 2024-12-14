@@ -1,9 +1,17 @@
 # Next-Generation Outlook + Google Calendar Sync
 
+> [!CAUTION]
+> I no longer actively maintain this project. See [here](https://github.com/MShekow/ng-outlook-google-calendar-sync/issues/20#issuecomment-2537932248) for details. It should continue to work, but I might not respond to help issues and will not develop any requested features. Since this is open-source software, PRs are welcome.
+
 A Microsoft Power Automate flow to synchronize Outlook 365 calendars or Google calendars. All synchronization combinations are supported:
 - Outlook 365 <-> Outlook 365 (within the same tenant, or across different tenants)
 - Outlook 365 <-> Google
 - Google <-> Google
+
+> [!NOTE]  
+> This flow requires that you pay for the Power Automate **Premium** plan because the flow makes HTTP requests using the Premium-only `HTTP` action!
+>
+> If you are looking for a solution that works with the _free_ plan of Power Automate, see https://github.com/MShekow/outlook-calendar-sync (Outlook 365 <-> Outlook 365) and https://github.com/MShekow/outlook-google-calendar-sync (Outlook 365 <-> Google). There is no version that supports Google <-> Google synchronization.
 
 ## Instructions & download
 
@@ -12,7 +20,7 @@ A Microsoft Power Automate flow to synchronize Outlook 365 calendars or Google c
 - To synchronize **Outlook 365** with **Outlook 365**: [download](https://github.com/MShekow/ng-outlook-google-calendar-sync/raw/refs/heads/main/Power%20Automate%20flows/v0.3/NG-Outlook-calendar-sync-v0.3.zip)
 - To synchronize **Google** with **Google**: [download](https://github.com/MShekow/ng-outlook-google-calendar-sync/raw/refs/heads/main/Power%20Automate%20flows/v0.3/NG-Google-calendar-sync-v0.3.zip)
 
-If you want to clean / delete all blocker events:
+If you want to clean/delete all blocker events:
 
 - For **Google**, download [this](https://github.com/MShekow/ng-outlook-google-calendar-sync/raw/refs/heads/main/Power%20Automate%20flows/Delete%20SyncBlocker%20events%20(Google).zip) helper PowerAuto flow
 - For **Outlook 365**, download [this](https://github.com/MShekow/ng-outlook-google-calendar-sync/raw/refs/heads/main/Power%20Automate%20flows/Delete%20SyncBlocker%20events%20(Outlook).zip) helper PowerAuto flow
