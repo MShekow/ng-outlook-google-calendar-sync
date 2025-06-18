@@ -18,5 +18,5 @@ pygithub = "2.6.1"
 optional = true
 
 [tool.poetry.group.test.dependencies]
-pytest = "8.4.0"
+pytest = "8.4.1"
 pytest-httpserver = "1.1.3"
