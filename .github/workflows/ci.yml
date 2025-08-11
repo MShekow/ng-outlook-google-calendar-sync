@@ -17,7 +17,7 @@ jobs:
       packages: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - uses: actions/setup-python@v5
         with:
           python-version-file: 'pyproject.toml'
@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Build Docker image and run smoke test
         run: |
           docker compose up -d
