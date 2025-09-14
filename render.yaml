@@ -12,4 +12,4 @@ services:
         value: "3.12.11"
       - key: POETRY_VERSION
         # renovate: datasource=pypi name=poetry
-        value: "2.1.4"
+        value: "2.2.0"
