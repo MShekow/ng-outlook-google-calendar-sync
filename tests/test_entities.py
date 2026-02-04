@@ -108,24 +108,28 @@ class TestGoogleCalendarEventFromImplementation:
         assert "non-midnight time" in str(exc_info.value)
         assert "Bad Event" in str(exc_info.value)
 
-    def test_datetime_non_midnight_start_date_end_raises(self):
+    def test_timed_event_ending_at_midnight(self):
         """
-        Test that a non-midnight datetime start with a date end raises an error.
-        This is a genuinely malformed event that can't be handled.
+        Test Google API edge case: a timed event (non-midnight start) with end as a date.
+        This happens when an event like "Vista Conference Stuff" starts at 20:00 and
+        ends at midnight - Google returns start as datetime but end as date.
+        Should be treated as a timed event, not all-day.
         """
         event = GoogleCalendarEvent(
-            id="bad_event_2",
-            summary="Another Bad Event",
-            description="Inconsistent event",
-            location="",
+            id="timed_midnight_end",
+            summary="Vista Conference Stuff",
+            description="Event from 8pm to midnight",
+            location="Conference Room",
             attendees="",
-            start=datetime(2024, 2, 2, 10, 0, 0, tzinfo=UTC),  # Non-midnight time
-            end=date(2024, 2, 3),
+            start=datetime(2024, 2, 2, 20, 0, 0, tzinfo=UTC),  # 8 PM
+            end=date(2024, 2, 3),  # Represents midnight
         )
-        with pytest.raises(ValueError) as exc_info:
-            AbstractCalendarEvent.from_implementation(event)
-        assert "non-midnight time" in str(exc_info.value)
-        assert "Another Bad Event" in str(exc_info.value)
+        result = AbstractCalendarEvent.from_implementation(event)
+        # Should be treated as a timed event (NOT all-day)
+        assert result.is_all_day is False
+        assert result.start == datetime(2024, 2, 2, 20, 0, 0, tzinfo=UTC)
+        assert result.end == datetime(2024, 2, 3, 0, 0, 0, tzinfo=UTC)  # Midnight
+        assert result.title == "Vista Conference Stuff"
 
     def test_same_day_all_day_event_raises(self):
         """Test that an all-day event with same start and end date raises an error."""
