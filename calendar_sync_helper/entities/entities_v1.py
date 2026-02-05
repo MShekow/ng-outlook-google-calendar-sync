@@ -45,26 +45,52 @@ class AbstractCalendarEvent(BaseModel):
     def from_implementation(cls, event_impl: GoogleCalendarEvent | OutlookCalendarEvent,
                             anonymize_fields: bool = False) -> Self:
         if isinstance(event_impl, GoogleCalendarEvent):
-            if type(event_impl.start) == date:
+            # Normalize start and end to consistent types - Google Calendar API can sometimes return
+            # mixed types (date for start, datetime at midnight for end) for events ending exactly at midnight
+            start_val = event_impl.start
+            end_val = event_impl.end
+
+            # Handle case where end is a datetime at midnight but start is a date
+            if type(start_val) == date and type(end_val) == datetime:
+                if end_val.hour == 0 and end_val.minute == 0 and end_val.second == 0:
+                    # Convert midnight datetime to date for consistency
+                    end_val = end_val.date()
+                else:
+                    raise ValueError(f"For event titled '{event_impl.summary}', the start is a date (not datetime), "
+                                     f"but the end is a datetime with non-midnight time ({end_val.time()}), "
+                                     f"which is inconsistent")
+
+            # Handle case where start is a datetime but end is a date
+            if type(start_val) == datetime and type(end_val) == date:
+                if start_val.hour == 0 and start_val.minute == 0 and start_val.second == 0:
+                    # Start is at midnight - treat as all-day event, convert start to date
+                    start_val = start_val.date()
+                else:
+                    # Timed event ending at midnight - Google returns end as date instead of datetime
+                    # Convert the end date to a datetime at midnight (00:00:00 UTC)
+                    zero_am_utc = time(hour=0, minute=0, second=0, tzinfo=UTC)
+                    end_val = datetime.combine(end_val, zero_am_utc)
+
+            if type(start_val) == date:
                 # all-day event, where e.g. start="2024-10-01" and end="2024-10-02" indicates a ONE-day-long event,
                 # that is, the interval notation would be: [start, end)
 
                 # Convert the start/end date object to datetime objects
                 zero_am_utc = time(hour=0, minute=0, second=0, tzinfo=UTC)
-                start_time = datetime.combine(event_impl.start, zero_am_utc)
-                if not type(event_impl.end) == date:
+                start_time = datetime.combine(start_val, zero_am_utc)
+                if not type(end_val) == date:
                     raise ValueError(f"For event titled '{event_impl.summary}', the start is a date (not datetime), "
                                      f"but the end is a datetime, which makes no sense")
-                date_diff = event_impl.end - event_impl.start
+                date_diff = end_val - start_val
                 if date_diff.days == 0:
                     raise ValueError(f"For event titled '{event_impl.summary}', the start and end date is the same,"
-                                     f"'{event_impl.start}', but expected it to be at least one day apart")
+                                     f"'{start_val}', but expected it to be at least one day apart")
 
-                end_time = datetime.combine(event_impl.end, zero_am_utc)
+                end_time = datetime.combine(end_val, zero_am_utc)
                 is_all_day = True
             else:
-                start_time = event_impl.start
-                end_time = event_impl.end
+                start_time = start_val
+                end_time = end_val
                 is_all_day = False
 
             return cls(

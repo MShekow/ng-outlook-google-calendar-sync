@@ -358,6 +358,46 @@ def test_success_simple_google_events(test_client: TestClient):
     ]
 
 
+def test_success_google_events_midnight_end(test_client: TestClient):
+    """
+    Tests that Google events with mixed date/datetime types are handled correctly.
+    This can happen when an event ends exactly at midnight - Google may return
+    start as a date (e.g., "2024-02-02") but end as a datetime at midnight
+    (e.g., "2024-02-03T00:00:00+00:00"), or vice versa.
+    """
+    test_events = load_test_data("google-events-midnight-end")
+
+    response = test_client.post(URL, headers=DEFAULT_HEADERS, json={"events": test_events})
+    assert response.status_code == 200
+    calendar_events = parse_abstract_calendar_event_list(response.json())
+    assert calendar_events == [
+        AbstractCalendarEvent(
+            sync_correlation_id="midnight_end_event_123",
+            title="Lunch with Feng/Kev/Mack",
+            description="Event with date start and datetime midnight end",
+            location="Restaurant",
+            start="2024-02-02T00:00:00Z",
+            end="2024-02-03T00:00:00Z",
+            is_all_day=True,
+            attendees=None,
+            show_as=None,
+            sensitivity=None
+        ),
+        AbstractCalendarEvent(
+            sync_correlation_id="midnight_start_event_456",
+            title="All Day Meeting",
+            description="Event with datetime midnight start and date end",
+            location="Office",
+            start="2024-02-05T00:00:00Z",
+            end="2024-02-06T00:00:00Z",
+            is_all_day=True,
+            attendees=None,
+            show_as=None,
+            sensitivity=None
+        )
+    ]
+
+
 def test_success_normal_and_sb_event(test_client: TestClient):
     """
     Uploads 3 Outlook events, one is a syncblocker for a matching prefix, one is a syncblocker without matching prefix,

@@ -1,0 +1,50 @@
+[
+  {
+    "kind": "calendar#event",
+    "etag": "\"3458825769834001\"",
+    "id": "midnight_end_event_123",
+    "status": "confirmed",
+    "htmlLink": "https://www.google.com/calendar/event?eid=test",
+    "created": "2024-02-01T08:00:00Z",
+    "updated": "2024-02-01T08:00:00Z",
+    "summary": "Lunch with Feng/Kev/Mack",
+    "location": "Restaurant",
+    "creator": "test@gmail.com",
+    "organizer": "test@gmail.com",
+    "start": "2024-02-02",
+    "end": "2024-02-03T00:00:00+00:00",
+    "iCalUID": "midnight_end_event_123@google.com",
+    "sequence": 0,
+    "reminders": {
+      "useDefault": false
+    },
+    "eventType": "default",
+    "description": "Event with date start and datetime midnight end",
+    "attendees": "",
+    "endTimeUnspecified": false
+  },
+  {
+    "kind": "calendar#event",
+    "etag": "\"3458825769834002\"",
+    "id": "midnight_start_event_456",
+    "status": "confirmed",
+    "htmlLink": "https://www.google.com/calendar/event?eid=test2",
+    "created": "2024-02-01T08:00:00Z",
+    "updated": "2024-02-01T08:00:00Z",
+    "summary": "All Day Meeting",
+    "location": "Office",
+    "creator": "test@gmail.com",
+    "organizer": "test@gmail.com",
+    "start": "2024-02-05T00:00:00+00:00",
+    "end": "2024-02-06",
+    "iCalUID": "midnight_start_event_456@google.com",
+    "sequence": 0,
+    "reminders": {
+      "useDefault": false
+    },
+    "eventType": "default",
+    "description": "Event with datetime midnight start and date end",
+    "attendees": "",
+    "endTimeUnspecified": false
+  }
+]
