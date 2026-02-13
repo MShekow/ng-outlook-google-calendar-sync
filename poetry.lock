@@ -1276,13 +1276,13 @@ dev = ["argcomplete", "attrs (>=19.2)", "hypothesis (>=3.56)", "mock", "requests
 
 [[package]]
 name = "pytest-httpserver"
-version = "1.1.3"
+version = "1.1.4"
 description = "pytest-httpserver is a httpserver for pytest"
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.10"
 files = [
-    {file = "pytest_httpserver-1.1.3-py3-none-any.whl", hash = "sha256:5f84757810233e19e2bb5287f3826a71c97a3740abe3a363af9155c0f82fdbb9"},
-    {file = "pytest_httpserver-1.1.3.tar.gz", hash = "sha256:af819d6b533f84b4680b9416a5b3f67f1df3701f1da54924afd4d6e4ba5917ec"},
+    {file = "pytest_httpserver-1.1.4-py3-none-any.whl", hash = "sha256:5dc73beae8cef139597cfdaab1b7f6bfe3551dd80965a6039e08498796053331"},
+    {file = "pytest_httpserver-1.1.4.tar.gz", hash = "sha256:4d357402ae7e141f3914ed7cd25f3e24746ae928792dad60053daee4feae81fc"},
 ]
 
 [package.dependencies]
@@ -2076,4 +2076,4 @@ watchdog = ["watchdog (>=2.3)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12.0"
-content-hash = "f561df85bf7dca9f72138b139ec456ae47d7bec7c1052ac14b3349742e1288e0"
+content-hash = "aee0a0d1793cb84f834e50f7764587bc97b73972383110bccc806db20754445c"
