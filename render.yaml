@@ -9,7 +9,7 @@ services:
     envVars:
       - key: PYTHON_VERSION
         # renovate: datasource=docker name=python
-        value: "3.12.12"
+        value: "3.14.3"
       - key: POETRY_VERSION
         # renovate: datasource=pypi name=poetry
         value: "2.3.2"
