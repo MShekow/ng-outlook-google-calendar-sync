@@ -24,13 +24,13 @@ files = [
 
 [[package]]
 name = "anyio"
-version = "4.12.1"
+version = "4.13.0"
 description = "High-level concurrency and networking framework on top of asyncio or Trio"
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.10"
 files = [
-    {file = "anyio-4.12.1-py3-none-any.whl", hash = "sha256:d405828884fc140aa80a3c667b8beed277f1dfedec42ba031bd6ac3db606ab6c"},
-    {file = "anyio-4.12.1.tar.gz", hash = "sha256:41cfcc3a4c85d3f05c932da7c26d0201ac36f72abd4435ba90d0464a3ffed703"},
+    {file = "anyio-4.13.0-py3-none-any.whl", hash = "sha256:08b310f9e24a9594186fd75b4f73f4a4152069e3853f1ed8bfbf58369f4ad708"},
+    {file = "anyio-4.13.0.tar.gz", hash = "sha256:334b70e641fd2221c1505b3890c69882fe4a2df910cba14d97019b90b24439dc"},
 ]
 
 [package.dependencies]
@@ -38,7 +38,7 @@ idna = ">=2.8"
 typing_extensions = {version = ">=4.5", markers = "python_version < \"3.13\""}
 
 [package.extras]
-trio = ["trio (>=0.31.0)", "trio (>=0.32.0)"]
+trio = ["trio (>=0.32.0)"]
 
 [[package]]
 name = "certifi"
@@ -471,13 +471,13 @@ standard-no-fastapi-cloud-cli = ["uvicorn[standard] (>=0.15.0)"]
 
 [[package]]
 name = "fastapi-cloud-cli"
-version = "0.15.0"
+version = "0.15.1"
 description = "Deploy and manage FastAPI Cloud apps from the command line 🚀"
 optional = false
 python-versions = ">=3.10"
 files = [
-    {file = "fastapi_cloud_cli-0.15.0-py3-none-any.whl", hash = "sha256:9ffcf90bd713747efa65447620d29cfbb7b3f7de38d97467952ca6346e418d70"},
-    {file = "fastapi_cloud_cli-0.15.0.tar.gz", hash = "sha256:d02515231f3f505f7669c20920343934570a88a08af9f9a6463ca2807f27ffe5"},
+    {file = "fastapi_cloud_cli-0.15.1-py3-none-any.whl", hash = "sha256:b1e8b3b26dc314e180fc0ab67dfd39d7d9fe160d3951081d09184eafaacf5649"},
+    {file = "fastapi_cloud_cli-0.15.1.tar.gz", hash = "sha256:71a46f8a1d9fea295544113d6b79f620dc5768b24012887887306d151165745d"},
 ]
 
 [package.dependencies]
@@ -1187,13 +1187,13 @@ urllib3 = ">=1.26.0"
 
 [[package]]
 name = "pygments"
-version = "2.19.2"
+version = "2.20.0"
 description = "Pygments is a syntax highlighting package written in Python."
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 files = [
-    {file = "pygments-2.19.2-py3-none-any.whl", hash = "sha256:86540386c03d588bb81d44bc3928634ff26449851e99741617ecb9037ee5ec0b"},
-    {file = "pygments-2.19.2.tar.gz", hash = "sha256:636cb2477cec7f8952536970bc533bc43743542f70392ae026374600add5b887"},
+    {file = "pygments-2.20.0-py3-none-any.whl", hash = "sha256:81a9e26dd42fd28a23a2d169d86d7ac03b46e2f8b59ed4698fb4785f946d0176"},
+    {file = "pygments-2.20.0.tar.gz", hash = "sha256:6757cd03768053ff99f3039c1a36d6c0aa0b263438fcab17520b30a303a82b5f"},
 ]
 
 [package.extras]
@@ -1404,24 +1404,25 @@ files = [
 
 [[package]]
 name = "requests"
-version = "2.32.5"
+version = "2.33.0"
 description = "Python HTTP for Humans."
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.10"
 files = [
-    {file = "requests-2.32.5-py3-none-any.whl", hash = "sha256:2462f94637a34fd532264295e186976db0f5d453d1cdd31473c85a6a161affb6"},
-    {file = "requests-2.32.5.tar.gz", hash = "sha256:dbba0bac56e100853db0ea71b82b4dfd5fe2bf6d3754a8893c3af500cec7d7cf"},
+    {file = "requests-2.33.0-py3-none-any.whl", hash = "sha256:3324635456fa185245e24865e810cecec7b4caf933d7eb133dcde67d48cee69b"},
+    {file = "requests-2.33.0.tar.gz", hash = "sha256:c7ebc5e8b0f21837386ad0e1c8fe8b829fa5f544d8df3b2253bff14ef29d7652"},
 ]
 
 [package.dependencies]
-certifi = ">=2017.4.17"
+certifi = ">=2023.5.7"
 charset_normalizer = ">=2,<4"
 idna = ">=2.5,<4"
-urllib3 = ">=1.21.1,<3"
+urllib3 = ">=1.26,<3"
 
 [package.extras]
 socks = ["PySocks (>=1.5.6,!=1.5.7)"]
-use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
+test = ["PySocks (>=1.5.6,!=1.5.7)", "pytest (>=3)", "pytest-cov", "pytest-httpbin (==2.1.0)", "pytest-mock", "pytest-xdist"]
+use-chardet-on-py3 = ["chardet (>=3.0.2,<8)"]
 
 [[package]]
 name = "rich"
@@ -1622,13 +1623,13 @@ files = [
 
 [[package]]
 name = "sentry-sdk"
-version = "2.55.0"
+version = "2.56.0"
 description = "Python client for Sentry (https://sentry.io)"
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "sentry_sdk-2.55.0-py2.py3-none-any.whl", hash = "sha256:97026981cb15699394474a196b88503a393cbc58d182ece0d3abe12b9bd978d4"},
-    {file = "sentry_sdk-2.55.0.tar.gz", hash = "sha256:3774c4d8820720ca4101548131b9c162f4c9426eb7f4d24aca453012a7470f69"},
+    {file = "sentry_sdk-2.56.0-py2.py3-none-any.whl", hash = "sha256:5afafb744ceb91d22f4cc650c6bd048ac6af5f7412dcc6c59305a2e36f4dbc02"},
+    {file = "sentry_sdk-2.56.0.tar.gz", hash = "sha256:fdab72030b69625665b2eeb9738bdde748ad254e8073085a0ce95382678e8168"},
 ]
 
 [package.dependencies]
@@ -2065,13 +2066,13 @@ files = [
 
 [[package]]
 name = "werkzeug"
-version = "3.1.6"
+version = "3.1.7"
 description = "The comprehensive WSGI web application library."
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "werkzeug-3.1.6-py3-none-any.whl", hash = "sha256:7ddf3357bb9564e407607f988f683d72038551200c704012bb9a4c523d42f131"},
-    {file = "werkzeug-3.1.6.tar.gz", hash = "sha256:210c6bede5a420a913956b4791a7f4d6843a43b6fcee4dfa08a65e93007d0d25"},
+    {file = "werkzeug-3.1.7-py3-none-any.whl", hash = "sha256:4b314d81163a3e1a169b6a0be2a000a0e204e8873c5de6586f453c55688d422f"},
+    {file = "werkzeug-3.1.7.tar.gz", hash = "sha256:fb8c01fe6ab13b9b7cdb46892b99b1d66754e1d7ab8e542e865ec13f526b5351"},
 ]
 
 [package.dependencies]
