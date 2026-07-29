@@ -26,7 +26,7 @@ DEFAULT_TEST_DATETIME = "2024-10-20T18:00:00Z"
 def test_fail_binary_input_format(test_client: TestClient):
     response = test_client.post(URL, content=b"hello world")
     assert response.status_code == 422
-    assert response.json()["detail"][0]["type"] == "json_invalid"
+    assert response.json()["detail"][0]["msg"] == "Input should be a valid dictionary or object to extract fields from"
 
 
 def test_fail_invalid_input_json_format(test_client: TestClient):
