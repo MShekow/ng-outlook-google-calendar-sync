@@ -1237,13 +1237,13 @@ yaml = ["pyyaml (>=6.0.1)"]
 
 [[package]]
 name = "pygithub"
-version = "2.9.1"
+version = "2.10.0"
 description = "Use the full Github API v3"
 optional = false
-python-versions = ">=3.9"
+python-versions = ">=3.10"
 files = [
-    {file = "pygithub-2.9.1-py3-none-any.whl", hash = "sha256:2ec78fca30092d51a42d76f4ddb02131b6f0c666a35dfdf364cf302cdda115b9"},
-    {file = "pygithub-2.9.1.tar.gz", hash = "sha256:59771d7ff63d54d427be2e7d0dad2208dfffc2b0a045fec959263787739b611c"},
+    {file = "pygithub-2.10.0-py3-none-any.whl", hash = "sha256:192ada2a76e4afc7d6b37e500c9bfeba1731e6506697445a5ba1c4af8bf0b924"},
+    {file = "pygithub-2.10.0.tar.gz", hash = "sha256:90ff24ef1cd1bd57124c2a3869cafee9d7b066909129ecdaba2c2d1903bc118d"},
 ]
 
 [package.dependencies]
@@ -2210,4 +2210,4 @@ watchdog = ["watchdog (>=2.3)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12.0"
-content-hash = "7c794f1690ba2f355374ed6fc295b8d6a7b63460d2d935bbc74fe04c3cc0c3d0"
+content-hash = "ccbd530b03fb2f764a2a3f5bd0a3359038f2308cb60cdb0c9d58f822ad1cbb3a"
