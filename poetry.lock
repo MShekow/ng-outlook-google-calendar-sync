@@ -540,13 +540,13 @@ standard-no-fastapi-cloud-cli = ["uvicorn[standard] (>=0.15.0)"]
 
 [[package]]
 name = "fastapi-cloud-cli"
-version = "0.25.0"
+version = "0.26.0"
 description = "Deploy and manage FastAPI Cloud apps from the command line 🚀"
 optional = false
 python-versions = ">=3.10"
 files = [
-    {file = "fastapi_cloud_cli-0.25.0-py3-none-any.whl", hash = "sha256:799868535a7a0716bd50bfb42dacc87aac570224e45052406840ff9244cc5841"},
-    {file = "fastapi_cloud_cli-0.25.0.tar.gz", hash = "sha256:98f6fffc5059c536435eb2ec547add43061a53879a1ac2271001b9e5dca4ba9b"},
+    {file = "fastapi_cloud_cli-0.26.0-py3-none-any.whl", hash = "sha256:94029f92f3dc4289b376e1213f0d6cc7c30d4f32de7e47b5effc6dc754ab9ce9"},
+    {file = "fastapi_cloud_cli-0.26.0.tar.gz", hash = "sha256:5fd64c26228c8ead803461e8b58ae64ffd586e960d97ab1fc848efac2d9539be"},
 ]
 
 [package.dependencies]
@@ -559,7 +559,7 @@ pydantic = [
     {version = ">=2.8.0", extras = ["email"], markers = "python_version == \"3.13\""},
     {version = ">=2.12.0", extras = ["email"], markers = "python_version >= \"3.14\""},
 ]
-rich-toolkit = ">=0.20.3"
+rich-toolkit = ">=0.20.5"
 rignore = ">=0.5.1"
 sentry-sdk = ">=2.20.0"
 typer = ">=0.26.1"
@@ -1310,13 +1310,13 @@ windows-terminal = ["colorama (>=0.4.6)"]
 
 [[package]]
 name = "pyjwt"
-version = "2.13.0"
+version = "2.14.0"
 description = "JSON Web Token implementation in Python"
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "pyjwt-2.13.0-py3-none-any.whl", hash = "sha256:66adcc2aff09b3f1bbd95fc1e1577df8ac8723c978552fd43304c8a290ac5728"},
-    {file = "pyjwt-2.13.0.tar.gz", hash = "sha256:41571c89ca91598c79e8ef18a2d07367d4810fbbd6f637794879baf1b7703423"},
+    {file = "pyjwt-2.14.0-py3-none-any.whl", hash = "sha256:ad0cef71c756a56e74863c2919cf0985f72decbcfcb550ee2f422e7c62b5eedc"},
+    {file = "pyjwt-2.14.0.tar.gz", hash = "sha256:77283c83fb56ecf566a886c757a714bc83668e38156de2cce8263302f42e0b86"},
 ]
 
 [package.dependencies]
@@ -1549,13 +1549,13 @@ jupyter = ["ipywidgets (>=7.5.1,<9)"]
 
 [[package]]
 name = "rich-toolkit"
-version = "0.20.4"
+version = "0.20.5"
 description = "Rich toolkit for building command-line applications"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "rich_toolkit-0.20.4-py3-none-any.whl", hash = "sha256:ea37e9d364e7a6a59af9d96c5b18de3f6046f17affa8b4bc07f3bfad7a597ec5"},
-    {file = "rich_toolkit-0.20.4.tar.gz", hash = "sha256:88f1b225e360e13c53d643ab52efaf59ef7bf4da282614c8ba5afb72bc63ddc2"},
+    {file = "rich_toolkit-0.20.5-py3-none-any.whl", hash = "sha256:e21fd616db9c0539d3c50f3433fb1173db95c19d3cbf215615e224182fad6c18"},
+    {file = "rich_toolkit-0.20.5.tar.gz", hash = "sha256:0c9e1c414ffb0720be26285d472e263d1e704b71d31a7e13274b9996db4969e1"},
 ]
 
 [package.dependencies]
@@ -1745,13 +1745,13 @@ files = [
 
 [[package]]
 name = "sentry-sdk"
-version = "2.68.1"
+version = "2.69.1"
 description = "Python client for Sentry (https://sentry.io)"
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "sentry_sdk-2.68.1-py3-none-any.whl", hash = "sha256:775b78871783a0ffd758276ad01b3bb2b1ebcdad8f9d2f0a7723f76b73c99b65"},
-    {file = "sentry_sdk-2.68.1.tar.gz", hash = "sha256:6a97895230b04bc35d4d8d2e51e3b9e21902dfb0086ccf1f131a80c15c7b997a"},
+    {file = "sentry_sdk-2.69.1-py3-none-any.whl", hash = "sha256:2d2556d9a14db548982b914cbed2a2dc07b6e55d941a620752f89a2afccfd78d"},
+    {file = "sentry_sdk-2.69.1.tar.gz", hash = "sha256:f9284b417540b0784b994fa021eb6f1e30ae1cce593d83541274d03c93966eff"},
 ]
 
 [package.dependencies]
